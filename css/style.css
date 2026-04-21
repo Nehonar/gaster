@@ -122,6 +122,12 @@ body {
   align-items: center;
   border-bottom: 1px solid var(--border);
   background: rgba(64,128,240,0.05);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.player-card:hover {
+  background: rgba(100,80,200,0.12);
 }
 
 .player-avatar {

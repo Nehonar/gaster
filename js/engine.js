@@ -175,13 +175,17 @@ const Engine = {
     const xpNeeded = nextThresh - curThresh;
     const pct = Math.min((xpInLevel / xpNeeded) * 100, 100);
 
+    const autoClass = classes[Math.min(level - 1, classes.length - 1)];
+    const customClass = this.data.settings?.playerClass;
+
     return {
       level,
       xp: Math.floor(xp),
       xpInLevel: Math.floor(xpInLevel),
       xpNeeded: Math.floor(xpNeeded),
       pct,
-      className: classes[Math.min(level - 1, classes.length - 1)]
+      className: customClass || autoClass,
+      autoClass
     };
   },
 

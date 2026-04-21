@@ -3,7 +3,7 @@
 const STORAGE_KEY = 'gasterquest_v1';
 
 const DEFAULT_DATA = {
-  settings: { currency: 'EUR', playerName: 'Aventurero' },
+  settings: { currency: 'EUR', playerName: 'Aventurero', playerClass: '', playerAvatar: '🧙' },
   incomes: [],
   expenses: [],
   transactions: [],

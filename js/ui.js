@@ -44,11 +44,87 @@ function confirmDialog(message, onConfirm, danger = false) {
 // ---- Update player card ----
 function renderPlayerCard() {
   const lvl = Engine.playerLevel();
+  const s = DB.get().settings;
   document.getElementById('player-level').textContent = `Nv. ${lvl.level}`;
   document.getElementById('player-class').textContent = lvl.className;
   document.getElementById('xp-bar').style.width = lvl.pct + '%';
   document.getElementById('xp-label').textContent = `${lvl.xpInLevel} / ${lvl.xpNeeded} XP`;
-  document.getElementById('player-name').textContent = DB.get().settings.playerName || 'Aventurero';
+  document.getElementById('player-name').textContent = s.playerName || 'Aventurero';
+  document.getElementById('player-avatar').textContent = s.playerAvatar || '🧙';
+}
+
+// ---- Edit player modal ----
+const PLAYER_CLASSES = [
+  { value: '', label: '— Auto (según nivel) —' },
+  { value: 'Guerrero', label: '⚔️ Guerrero' },
+  { value: 'Mago', label: '🔮 Mago' },
+  { value: 'Pícaro', label: '🗡️ Pícaro' },
+  { value: 'Paladín', label: '🛡️ Paladín' },
+  { value: 'Bárbaro', label: '🪓 Bárbaro' },
+  { value: 'Arquero', label: '🏹 Arquero' },
+  { value: 'Druida', label: '🌿 Druida' },
+  { value: 'Clérigo', label: '✨ Clérigo' },
+  { value: 'Nigromante', label: '💀 Nigromante' },
+  { value: 'Bardo', label: '🎵 Bardo' },
+];
+
+const PLAYER_AVATARS = ['🧙','⚔️','🛡️','🏹','🗡️','🪓','🔮','💀','🌿','✨','🎵','👑','🐉','🦅','🐺'];
+
+function openPlayerEdit() {
+  const s = DB.get().settings;
+  const lvl = Engine.playerLevel();
+  openModal(`
+    <div class="modal-title">🧙 Editar Personaje</div>
+    <form class="rpg-form" onsubmit="savePlayerEdit(event)">
+      <div class="form-group">
+        <label>Nombre del Aventurero</label>
+        <input name="playerName" value="${s.playerName || ''}" placeholder="Tu nombre" maxlength="30" required>
+      </div>
+      <div class="form-group">
+        <label>Clase</label>
+        <select name="playerClass">
+          ${PLAYER_CLASSES.map(c => `<option value="${c.value}" ${(s.playerClass || '') === c.value ? 'selected' : ''}>${c.label}</option>`).join('')}
+        </select>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">
+          Clase automática actual: <strong>${lvl.autoClass}</strong>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Avatar</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+          ${PLAYER_AVATARS.map(a => `
+            <label style="cursor:pointer">
+              <input type="radio" name="playerAvatar" value="${a}" ${(s.playerAvatar || '🧙') === a ? 'checked' : ''} style="display:none">
+              <span class="avatar-opt" style="font-size:26px;padding:6px 8px;border-radius:8px;border:2px solid ${(s.playerAvatar || '🧙') === a ? 'var(--gold)' : 'var(--border)'};display:inline-block;transition:border-color 0.15s">${a}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">💾 Guardar</button>
+    </form>
+  `);
+
+  // Highlight selected avatar on click
+  document.querySelectorAll('input[name="playerAvatar"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.avatar-opt').forEach(s => s.style.borderColor = 'var(--border)');
+      radio.nextElementSibling.style.borderColor = 'var(--gold)';
+    });
+  });
+}
+
+function savePlayerEdit(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  DB.updateItem && DB.get().settings;
+  const data = DB.get();
+  data.settings.playerName = fd.get('playerName').trim() || 'Aventurero';
+  data.settings.playerClass = fd.get('playerClass');
+  data.settings.playerAvatar = fd.get('playerAvatar') || '🧙';
+  DB.save();
+  toast('Personaje actualizado ✨', 'success');
+  closeModal();
+  refresh();
 }
 
 // ---- Top bar balance ----
