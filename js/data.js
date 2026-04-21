@@ -117,7 +117,8 @@ const DB = {
 
   reset() {
     localStorage.removeItem(STORAGE_KEY);
-    this._data = this._seed();
+    this._data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    this.save();
     return this._data;
   }
 };
