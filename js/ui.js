@@ -25,6 +25,22 @@ function closeModal() {
   document.getElementById('modal-content').innerHTML = '';
 }
 
+// ---- Confirm dialog (replaces native confirm() which breaks on mobile) ----
+function confirmDialog(message, onConfirm, danger = false) {
+  openModal(`
+    <div class="modal-title">⚠️ Confirmar</div>
+    <p style="font-size:15px;margin-bottom:20px;line-height:1.5">${message}</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal()" style="border:1px solid var(--border);color:var(--text-dim)">Cancelar</button>
+      <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" id="confirm-ok-btn">Confirmar</button>
+    </div>
+  `);
+  document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+    closeModal();
+    onConfirm();
+  });
+}
+
 // ---- Update player card ----
 function renderPlayerCard() {
   const lvl = Engine.playerLevel();

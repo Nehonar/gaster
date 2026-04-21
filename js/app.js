@@ -33,10 +33,11 @@ function refresh() {
 
 // ---- CRUD helpers called from HTML ----
 function deleteItem(collection, id) {
-  if (!confirm('¿Eliminar este elemento?')) return;
-  DB.deleteItem(collection, id);
-  toast('Eliminado', 'warning', '🗑️');
-  refresh();
+  confirmDialog('¿Eliminar este elemento?', () => {
+    DB.deleteItem(collection, id);
+    toast('Eliminado', 'warning', '🗑️');
+    refresh();
+  }, true);
 }
 
 function toggleItem(collection, id, value) {
@@ -74,10 +75,11 @@ function importData(e) {
 }
 
 function resetData() {
-  if (!confirm('¿Resetear TODOS los datos? Esta acción no se puede deshacer.')) return;
-  DB.reset();
-  toast('Datos reseteados 🔥', 'warning');
-  refresh();
+  confirmDialog('¿Resetear TODOS los datos?<br><strong style="color:var(--red)">Esta acción no se puede deshacer.</strong>', () => {
+    DB.reset();
+    toast('Datos reseteados 🔥', 'warning');
+    refresh();
+  }, true);
 }
 
 // ---- Period selector ----
