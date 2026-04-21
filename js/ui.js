@@ -209,11 +209,11 @@ ${incomes.length === 0 ? `
     <p>Añade tu sueldo u otros ingresos para empezar a planificar</p>
   </div>
 ` : `
-<div class="card">
+<div class="card table-scroll">
   <table class="rpg-table">
     <thead><tr>
-      <th>Nombre</th><th>Cantidad</th><th>Frecuencia</th>
-      <th>Tipo</th><th>Categoría</th><th>Estado</th><th>Acciones</th>
+      <th>Nombre</th><th>Cantidad</th><th class="col-hide-mobile">Frecuencia</th>
+      <th class="col-hide-mobile">Tipo</th><th class="col-hide-mobile">Categoría</th><th>Estado</th><th>Acciones</th>
     </tr></thead>
     <tbody>
       ${incomes.map(i => {
@@ -221,9 +221,9 @@ ${incomes.length === 0 ? `
         return `<tr>
           <td><strong>${i.name}</strong></td>
           <td><span class="chip chip-income">+${fmt(i.amount, Engine.currency)}</span></td>
-          <td>${FREQ_LABELS[i.frequency] || i.frequency}</td>
-          <td><span class="badge badge-${i.type}">${i.type === 'recurring' ? 'Recurrente' : 'Extra'}</span></td>
-          <td>${cat.icon} ${cat.label}</td>
+          <td class="col-hide-mobile">${FREQ_LABELS[i.frequency] || i.frequency}</td>
+          <td class="col-hide-mobile"><span class="badge badge-${i.type}">${i.type === 'recurring' ? 'Recurrente' : 'Extra'}</span></td>
+          <td class="col-hide-mobile">${cat.icon} ${cat.label}</td>
           <td>
             <label class="toggle">
               <input type="checkbox" ${i.active !== false ? 'checked' : ''} onchange="toggleItem('incomes','${i.id}',this.checked)">
@@ -262,11 +262,11 @@ ${expenses.length === 0 ? `
     <p>Añade tus gastos fijos para ver el balance real</p>
   </div>
 ` : `
-<div class="card">
+<div class="card table-scroll">
   <table class="rpg-table">
     <thead><tr>
-      <th>Nombre</th><th>Cantidad</th><th>Frecuencia</th>
-      <th>Tipo</th><th>Categoría</th><th>Obligatorio</th><th>Estado</th><th>Acciones</th>
+      <th>Nombre</th><th>Cantidad</th><th class="col-hide-mobile">Frecuencia</th>
+      <th class="col-hide-mobile">Tipo</th><th class="col-hide-mobile">Categoría</th><th class="col-hide-mobile">Obligatorio</th><th>Estado</th><th>Acciones</th>
     </tr></thead>
     <tbody>
       ${expenses.map(e => {
@@ -274,10 +274,10 @@ ${expenses.length === 0 ? `
         return `<tr>
           <td><strong>${e.name}</strong></td>
           <td><span class="chip chip-expense">-${fmt(e.amount, Engine.currency)}</span></td>
-          <td>${FREQ_LABELS[e.frequency] || e.frequency}</td>
-          <td><span class="badge badge-${e.type}">${e.type === 'recurring' ? 'Recurrente' : e.type === 'planned' ? 'Planificado' : 'Extra'}</span></td>
-          <td>${cat.icon} ${cat.label}</td>
-          <td style="text-align:center">${e.mandatory ? '🔴' : '⚪'}</td>
+          <td class="col-hide-mobile">${FREQ_LABELS[e.frequency] || e.frequency}</td>
+          <td class="col-hide-mobile"><span class="badge badge-${e.type}">${e.type === 'recurring' ? 'Recurrente' : e.type === 'planned' ? 'Planificado' : 'Extra'}</span></td>
+          <td class="col-hide-mobile">${cat.icon} ${cat.label}</td>
+          <td class="col-hide-mobile" style="text-align:center">${e.mandatory ? '🔴' : '⚪'}</td>
           <td>
             <label class="toggle">
               <input type="checkbox" ${e.active !== false ? 'checked' : ''} onchange="toggleItem('expenses','${e.id}',this.checked)">

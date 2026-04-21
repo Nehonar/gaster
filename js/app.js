@@ -90,28 +90,43 @@ document.querySelectorAll('.period-btn').forEach(btn => {
   });
 });
 
+// ---- Sidebar open/close ----
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-backdrop').classList.add('visible');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('visible');
+}
+
 // ---- Nav ----
 document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => navigate(item.dataset.view));
+  item.addEventListener('click', () => {
+    navigate(item.dataset.view);
+    closeSidebar();
+  });
 });
 
 // ---- Quick action buttons ----
-document.getElementById('btn-quick-expense').addEventListener('click', () => openTxForm('expense'));
-document.getElementById('btn-quick-income').addEventListener('click', () => openTxForm('income'));
+document.getElementById('btn-quick-expense').addEventListener('click', () => {
+  closeSidebar();
+  openTxForm('expense');
+});
+document.getElementById('btn-quick-income').addEventListener('click', () => {
+  closeSidebar();
+  openTxForm('income');
+});
 
-// ---- Mobile menu ----
+// ---- Mobile menu toggle ----
 document.getElementById('menu-toggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('open');
+  const isOpen = document.getElementById('sidebar').classList.contains('open');
+  isOpen ? closeSidebar() : openSidebar();
 });
 
-// Close sidebar on nav click (mobile)
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    if (window.innerWidth <= 768) {
-      document.getElementById('sidebar').classList.remove('open');
-    }
-  });
-});
+// ---- Backdrop closes sidebar ----
+document.getElementById('sidebar-backdrop').addEventListener('click', closeSidebar);
 
 // ---- Modal close ----
 document.getElementById('modal-close').addEventListener('click', closeModal);

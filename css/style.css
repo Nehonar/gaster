@@ -984,32 +984,128 @@ select option { background: var(--bg-dark); }
 .dot-yellow { background: var(--yellow); box-shadow: 0 0 4px var(--yellow); }
 .dot-gray { background: #555; }
 
+/* ===== SIDEBAR BACKDROP (mobile) ===== */
+#sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 99;
+  backdrop-filter: blur(2px);
+}
+
+#sidebar-backdrop.visible { display: block; }
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
+  /* Sidebar off-screen by default */
   #sidebar {
     transform: translateX(-100%);
+    width: 260px;
   }
 
   #sidebar.open {
     transform: translateX(0);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.8);
+    box-shadow: 6px 0 30px rgba(0,0,0,0.9);
   }
 
+  /* Main takes full width */
   #main { margin-left: 0; }
 
-  #menu-toggle { display: block; }
+  /* Show hamburger */
+  #menu-toggle { display: flex; }
 
+  /* Top bar: compact */
+  #top-bar {
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .period-selector {
+    order: 2;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .period-btn {
+    flex: 1;
+    text-align: center;
+    padding: 5px 6px;
+    font-size: 11px;
+  }
+
+  .top-stats { margin-left: auto; }
+
+  /* View container: tighter padding */
+  #view-container { padding: 12px; }
+
+  /* Stat cards: 2 columns */
   .stat-cards { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: 12px 10px; }
+  .stat-value { font-size: 17px; }
 
+  /* Two-col → single */
   .two-col { grid-template-columns: 1fr; }
 
+  /* Forms: single column */
   .form-row { grid-template-columns: 1fr; }
+
+  /* Goals: single column */
+  .goals-list { grid-template-columns: 1fr; }
+
+  /* Achievements: 2 columns */
+  .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Section header: stack on small screens */
+  .section-header { flex-wrap: wrap; gap: 8px; }
+
+  /* Tables: horizontal scroll */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide lower-priority table columns */
+  .rpg-table .col-hide-mobile { display: none; }
+
+  /* Modal: full width on mobile */
+  #modal-box {
+    width: 100%;
+    max-width: 100%;
+    min-height: 50vh;
+    position: fixed;
+    bottom: 0;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px;
+    margin: 0;
+  }
+
+  /* Toast: bottom center on mobile */
+  #toast-container {
+    right: 12px;
+    left: 12px;
+    bottom: 16px;
+  }
+
+  .toast { max-width: 100%; }
+
+  /* Budget items: slightly tighter */
+  .budget-item { padding: 10px 12px; }
+
+  /* Quick buttons in sidebar: bigger tap area */
+  .btn-quick { padding: 12px; font-size: 13px; }
 }
 
 @media (max-width: 480px) {
   .stat-cards { grid-template-columns: 1fr 1fr; }
-  .goals-list { grid-template-columns: 1fr; }
-  .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: 10px 8px; }
+  .stat-value { font-size: 15px; }
+  .stat-icon { font-size: 20px; }
+
+  #view-container { padding: 10px; }
+
+  .section-title { font-size: 16px; }
 }
 
 /* ===== UTILITY ===== */
