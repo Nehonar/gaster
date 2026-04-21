@@ -54,19 +54,6 @@ function renderPlayerCard() {
 }
 
 // ---- Edit player modal ----
-const PLAYER_CLASSES = [
-  { value: '', label: '— Auto (según nivel) —' },
-  { value: 'Guerrero', label: '⚔️ Guerrero' },
-  { value: 'Mago', label: '🔮 Mago' },
-  { value: 'Pícaro', label: '🗡️ Pícaro' },
-  { value: 'Paladín', label: '🛡️ Paladín' },
-  { value: 'Bárbaro', label: '🪓 Bárbaro' },
-  { value: 'Arquero', label: '🏹 Arquero' },
-  { value: 'Druida', label: '🌿 Druida' },
-  { value: 'Clérigo', label: '✨ Clérigo' },
-  { value: 'Nigromante', label: '💀 Nigromante' },
-  { value: 'Bardo', label: '🎵 Bardo' },
-];
 
 const PLAYER_AVATARS = ['🧙','⚔️','🛡️','🏹','🗡️','🪓','🔮','💀','🌿','✨','🎵','👑','🐉','🦅','🐺'];
 
@@ -81,12 +68,10 @@ function openPlayerEdit() {
         <input name="playerName" value="${s.playerName || ''}" placeholder="Tu nombre" maxlength="30" required>
       </div>
       <div class="form-group">
-        <label>Clase</label>
-        <select name="playerClass">
-          ${PLAYER_CLASSES.map(c => `<option value="${c.value}" ${(s.playerClass || '') === c.value ? 'selected' : ''}>${c.label}</option>`).join('')}
-        </select>
+        <label>Lo que eres (aparece al lado del nivel)</label>
+        <input name="playerClass" value="${s.playerClass || ''}" placeholder="${lvl.autoClass}" maxlength="30">
         <div style="font-size:11px;color:var(--text-dim);margin-top:4px">
-          Clase automática actual: <strong>${lvl.autoClass}</strong>
+          Déjalo vacío para que cambie solo según tu nivel
         </div>
       </div>
       <div class="form-group">
