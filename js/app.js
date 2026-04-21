@@ -130,6 +130,9 @@ document.getElementById('menu-toggle').addEventListener('click', () => {
 // ---- Backdrop closes sidebar ----
 document.getElementById('sidebar-backdrop').addEventListener('click', closeSidebar);
 
+// ---- Edit player ----
+document.getElementById('btn-edit-player').addEventListener('click', openPlayerEdit);
+
 // ---- Modal close ----
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('modal-overlay').addEventListener('click', e => {
