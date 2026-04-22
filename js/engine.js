@@ -152,16 +152,29 @@ const Engine = {
     return { total, pct, remaining, monthsLeft, contribs };
   },
 
-  // Player level based on total saved
+  // Player XP earned through real actions only
   playerLevel() {
-    const saved = this.data.goals.reduce((s, g) => s + (g.currentAmount || 0), 0)
-      + this.data.goalContributions.reduce((s, c) => s + c.amount, 0);
-    const monthly = this.savingsMonthly();
+    const data = this.data;
 
-    // XP = saved * 0.1 + monthly * 0.5
-    const xp = Math.max(0, saved * 0.1 + Math.max(0, monthly) * 0.5);
+    // 1. Budget adherence: 1 XP per € under budget (this month)
+    const budgets = this.budgetStatus();
+    const budgetXP = budgets.reduce((sum, b) => sum + Math.max(0, b.diff), 0);
 
-    const thresholds = [0, 100, 250, 500, 1000, 2000, 4000, 8000, 15000, 30000];
+    // 2. Goal contributions: 0.5 XP per € contributed
+    const contribXP = data.goalContributions.reduce((s, c) => s + c.amount, 0) * 0.5;
+
+    // 3. Completed goals bonus: 10% of target as one-time reward
+    const completedXP = data.goals
+      .filter(g => this.goalProgress(g).total >= g.targetAmount)
+      .reduce((s, g) => s + g.targetAmount * 0.1, 0);
+
+    // 4. Transaction tracking: 3 XP per entry logged
+    const txXP = data.transactions.length * 3;
+
+    const xp = budgetXP + contribXP + completedXP + txXP;
+
+    // Cumulative XP thresholds per level (each jump ~20% harder)
+    const thresholds = [0, 150, 330, 550, 810, 1120, 1490, 1930, 2450, 3070];
     const classes = ['Aprendiz','Escudero','Guerrero','Caballero','Campeón','Paladín','Héroe','Leyenda','Dios','Inmortal'];
 
     let level = 1;
@@ -174,9 +187,8 @@ const Engine = {
     const xpInLevel = xp - curThresh;
     const xpNeeded = nextThresh - curThresh;
     const pct = Math.min((xpInLevel / xpNeeded) * 100, 100);
-
     const autoClass = classes[Math.min(level - 1, classes.length - 1)];
-    const customClass = this.data.settings?.playerClass;
+    const customClass = data.settings?.playerClass;
 
     return {
       level,
@@ -185,7 +197,13 @@ const Engine = {
       xpNeeded: Math.floor(xpNeeded),
       pct,
       className: customClass || autoClass,
-      autoClass
+      autoClass,
+      breakdown: {
+        budget: Math.floor(budgetXP),
+        contribs: Math.floor(contribXP),
+        goals: Math.floor(completedXP),
+        tracking: Math.floor(txXP)
+      }
     };
   },
 

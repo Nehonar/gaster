@@ -48,7 +48,7 @@ function renderPlayerCard() {
   document.getElementById('player-level').textContent = `Nv. ${lvl.level}`;
   document.getElementById('player-class').textContent = lvl.className;
   document.getElementById('xp-bar').style.width = lvl.pct + '%';
-  document.getElementById('xp-label').textContent = `${lvl.xpInLevel} / ${lvl.xpNeeded} XP`;
+  document.getElementById('xp-label').textContent = `${lvl.xpInLevel} / ${lvl.xpNeeded} XP para subir`;
   document.getElementById('player-name').textContent = s.playerName || 'Aventurero';
   document.getElementById('player-avatar').textContent = s.playerAvatar || '🧙';
 }
@@ -143,6 +143,7 @@ function renderDashboard() {
 
   const budgets = Engine.budgetStatus();
   const goals = d.goals.filter(g => g.active).slice(0, 3);
+  const lvl = Engine.playerLevel();
 
   const periodLabel = { month: 'este mes', week: 'esta semana', year: 'este año' }[currentPeriod];
 
@@ -207,6 +208,50 @@ function renderDashboard() {
         <div class="stat-icon">${realSav >= 0 ? '✨' : '💀'}</div>
         <div class="stat-label">Balance real</div>
         <div class="stat-value ${realSav >= 0 ? 'text-green' : 'text-red'}">${fmt(realSav, Engine.currency)}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- XP BREAKDOWN -->
+  <div class="card">
+    <div class="card-title">⭐ Cómo ganas XP</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+      <div>
+        <div class="flex justify-between" style="font-size:13px;margin-bottom:4px">
+          <span>🛡️ Presupuestos respetados</span>
+          <span class="text-gold font-cinzel">+${lvl.breakdown.budget} XP</span>
+        </div>
+        ${progressBar(lvl.breakdown.budget > 0 ? 100 : 0, 'gold', 5)}
+        <div class="text-dim" style="font-size:11px">1 XP por cada € que te sobre del presupuesto</div>
+      </div>
+      <div>
+        <div class="flex justify-between" style="font-size:13px;margin-bottom:4px">
+          <span>🏆 Aportaciones a metas</span>
+          <span class="text-gold font-cinzel">+${lvl.breakdown.contribs} XP</span>
+        </div>
+        ${progressBar(lvl.breakdown.contribs > 0 ? 100 : 0, 'gold', 5)}
+        <div class="text-dim" style="font-size:11px">0.5 XP por cada € aportado</div>
+      </div>
+      <div>
+        <div class="flex justify-between" style="font-size:13px;margin-bottom:4px">
+          <span>🎯 Metas completadas</span>
+          <span class="text-gold font-cinzel">+${lvl.breakdown.goals} XP</span>
+        </div>
+        ${progressBar(lvl.breakdown.goals > 0 ? 100 : 0, 'gold', 5)}
+        <div class="text-dim" style="font-size:11px">Bonus del 10% del objetivo al completarla</div>
+      </div>
+      <div>
+        <div class="flex justify-between" style="font-size:13px;margin-bottom:4px">
+          <span>📜 Movimientos registrados</span>
+          <span class="text-gold font-cinzel">+${lvl.breakdown.tracking} XP</span>
+        </div>
+        ${progressBar(Math.min(lvl.breakdown.tracking, 150) / 150 * 100, 'gold', 5)}
+        <div class="text-dim" style="font-size:11px">3 XP por cada movimiento anotado</div>
+      </div>
+      <div class="divider"></div>
+      <div class="flex justify-between font-cinzel" style="font-size:14px">
+        <span>Total XP</span>
+        <span class="text-gold">${lvl.xp} XP · Nivel ${lvl.level}</span>
       </div>
     </div>
   </div>
