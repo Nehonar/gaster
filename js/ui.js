@@ -131,19 +131,22 @@ function progressBar(pct, color = 'green', height = 10) {
 // ===================== DASHBOARD =====================
 function renderDashboard() {
   const d = DB.get();
-  const inc = Engine.totalIncomeMonthly();
-  const exp = Engine.totalExpenseMonthly();
-  const sav = Engine.savingsMonthly();
-  const weekly = Engine.savingsWeekly();
-  const daily = Engine.savingsDaily();
+  const inc     = Engine.totalIncomeMonthly();
+  const exp     = Engine.totalExpenseMonthly();
+  const sav     = Engine.savingsMonthly();
+  const weekly  = Engine.savingsWeekly();
+  const daily   = Engine.savingsDaily();
+  const liquid  = Engine.liquidBalance();
+  const inVaults = Engine.totalVaultsBalance();
+  const wealth  = Engine.totalWealth();
 
   const realInc = Engine.realIncomeInPeriod(currentPeriod);
   const realExp = Engine.realExpenseInPeriod(currentPeriod);
   const realSav = Engine.realSavingsInPeriod(currentPeriod);
 
   const budgets = Engine.budgetStatus();
-  const goals = d.goals.filter(g => g.active).slice(0, 3);
-  const lvl = Engine.playerLevel();
+  const goals   = d.goals.filter(g => g.active).slice(0, 3);
+  const lvl     = Engine.playerLevel();
 
   const periodLabel = { month: 'este mes', week: 'esta semana', year: 'este año' }[currentPeriod];
 
@@ -153,9 +156,31 @@ function renderDashboard() {
     <h2 class="section-title">🗺️ Mapa del Reino</h2>
   </div>
 
+  <!-- PATRIMONIO -->
+  <div class="stat-cards">
+    <div class="stat-card balance">
+      <div class="stat-icon">💰</div>
+      <div class="stat-label">Balance líquido</div>
+      <div class="stat-value ${liquid >= 0 ? 'text-gold' : 'text-red'}">${fmt(liquid, Engine.currency)}</div>
+      <div class="card-sub">disponible</div>
+    </div>
+    <div class="stat-card savings">
+      <div class="stat-icon">🏦</div>
+      <div class="stat-label">En cofres</div>
+      <div class="stat-value text-blue">${fmt(inVaults, Engine.currency)}</div>
+      <div class="card-sub">invertido</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👑</div>
+      <div class="stat-label">Patrimonio total</div>
+      <div class="stat-value text-gold" style="font-size:22px">${fmt(wealth, Engine.currency)}</div>
+      <div class="card-sub">líquido + cofres</div>
+    </div>
+  </div>
+
   <!-- PLANNED STATS -->
   <div>
-    <div class="card-title">⚔️ Planificado (mensual)</div>
+    <div class="card-title">📋 Contratos del Reino (mensual)</div>
     <div class="stat-cards">
       <div class="stat-card income">
         <div class="stat-icon">💰</div>
@@ -310,130 +335,102 @@ function renderDashboard() {
 </div>`;
 }
 
-// ===================== INCOMES =====================
-function renderIncomes() {
-  const incomes = DB.get().incomes;
-  const total = Engine.totalIncomeMonthly();
-
-  return `
-<div class="section-header">
-  <h2 class="section-title">💰 Tesoro</h2>
-  <button class="btn btn-success" onclick="openIncomeForm()">+ Nuevo Ingreso</button>
-</div>
-<div class="card mb-16" style="display:flex;gap:20px;flex-wrap:wrap">
-  <div><div class="stat-label">Total mensual</div><div class="stat-value text-green">${fmt(total, Engine.currency)}</div></div>
-  <div><div class="stat-label">Fuentes activas</div><div class="stat-value">${incomes.filter(i=>i.active!==false).length}</div></div>
-</div>
-${incomes.length === 0 ? `
-  <div class="empty-state">
-    <div class="empty-icon">💰</div>
-    <h3>Sin fuentes de ingresos</h3>
-    <p>Añade tu sueldo u otros ingresos para empezar a planificar</p>
-  </div>
-` : `
-<div class="card table-scroll">
-  <table class="rpg-table">
-    <thead><tr>
-      <th>Nombre</th><th>Cantidad</th><th class="col-hide-mobile">Frecuencia</th>
-      <th class="col-hide-mobile">Tipo</th><th class="col-hide-mobile">Categoría</th><th>Estado</th><th>Acciones</th>
-    </tr></thead>
-    <tbody>
-      ${incomes.map(i => {
-        const cat = CATEGORIES[i.category] || CATEGORIES.other;
-        return `<tr>
-          <td><strong>${i.name}</strong></td>
-          <td><span class="chip chip-income">+${fmt(i.amount, Engine.currency)}</span></td>
-          <td class="col-hide-mobile">${FREQ_LABELS[i.frequency] || i.frequency}</td>
-          <td class="col-hide-mobile"><span class="badge badge-${i.type}">${i.type === 'recurring' ? 'Recurrente' : 'Extra'}</span></td>
-          <td class="col-hide-mobile">${cat.icon} ${cat.label}</td>
-          <td>
-            <label class="toggle">
-              <input type="checkbox" ${i.active !== false ? 'checked' : ''} onchange="toggleItem('incomes','${i.id}',this.checked)">
-              <span class="toggle-slider"></span>
-            </label>
-          </td>
-          <td style="display:flex;gap:6px">
-            <button class="btn btn-sm btn-primary btn-icon" onclick="openIncomeForm('${i.id}')">✏️</button>
-            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteItem('incomes','${i.id}')">🗑️</button>
-          </td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table>
-</div>`}`;
-}
-
-// ===================== EXPENSES =====================
-function renderExpenses() {
+// ===================== CONTRATOS DEL REINO =====================
+function renderContratos() {
+  const incomes  = DB.get().incomes;
   const expenses = DB.get().expenses;
-  const total = Engine.totalExpenseMonthly();
+  const totalInc = Engine.totalIncomeMonthly();
+  const totalExp = Engine.totalExpenseMonthly();
+  const balance  = totalInc - totalExp;
+
+  function incomeRows() {
+    if (!incomes.length) return `<div class="text-dim" style="padding:12px;font-size:13px">Sin ingresos fijos — añade tu sueldo u otros ingresos recurrentes</div>`;
+    return incomes.map(i => {
+      const cat = CATEGORIES[i.category] || CATEGORIES.other;
+      return `<tr>
+        <td><strong>${i.name}</strong></td>
+        <td><span class="chip chip-income">+${fmt(i.amount, Engine.currency)}</span></td>
+        <td class="col-hide-mobile">${FREQ_LABELS[i.frequency] || i.frequency}</td>
+        <td class="col-hide-mobile">${cat.icon} ${cat.label}</td>
+        <td><label class="toggle"><input type="checkbox" ${i.active!==false?'checked':''} onchange="toggleItem('incomes','${i.id}',this.checked)"><span class="toggle-slider"></span></label></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-primary btn-icon" onclick="openIncomeForm('${i.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger btn-icon" onclick="deleteItem('incomes','${i.id}')">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function expenseRows() {
+    if (!expenses.length) return `<div class="text-dim" style="padding:12px;font-size:13px">Sin gastos fijos — añade hipoteca, facturas, suscripciones...</div>`;
+    return expenses.map(e => {
+      const cat = CATEGORIES[e.category] || CATEGORIES.other;
+      return `<tr>
+        <td><strong>${e.name}</strong></td>
+        <td><span class="chip chip-expense">-${fmt(e.amount, Engine.currency)}</span></td>
+        <td class="col-hide-mobile">${FREQ_LABELS[e.frequency] || e.frequency}</td>
+        <td class="col-hide-mobile">${cat.icon} ${cat.label}</td>
+        <td><label class="toggle"><input type="checkbox" ${e.active!==false?'checked':''} onchange="toggleItem('expenses','${e.id}',this.checked)"><span class="toggle-slider"></span></label></td>
+        <td style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-primary btn-icon" onclick="openExpenseForm('${e.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger btn-icon" onclick="deleteItem('expenses','${e.id}')">🗑️</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
 
   return `
 <div class="section-header">
-  <h2 class="section-title">🗡️ Gastos de Guerra</h2>
-  <button class="btn btn-danger" onclick="openExpenseForm()">+ Nuevo Gasto</button>
+  <h2 class="section-title">📋 Contratos del Reino</h2>
 </div>
-<div class="card mb-16" style="display:flex;gap:20px;flex-wrap:wrap">
-  <div><div class="stat-label">Total mensual</div><div class="stat-value text-red">${fmt(total, Engine.currency)}</div></div>
-  <div><div class="stat-label">Gastos activos</div><div class="stat-value">${expenses.filter(e=>e.active!==false).length}</div></div>
+<div class="stat-cards mb-16">
+  <div class="stat-card income"><div class="stat-icon">💰</div><div class="stat-label">Ingresos / mes</div><div class="stat-value text-green">${fmt(totalInc,Engine.currency)}</div></div>
+  <div class="stat-card expense"><div class="stat-icon">🗡️</div><div class="stat-label">Gastos / mes</div><div class="stat-value text-red">${fmt(totalExp,Engine.currency)}</div></div>
+  <div class="stat-card ${balance>=0?'savings':'expense'}"><div class="stat-icon">${balance>=0?'✨':'💀'}</div><div class="stat-label">Margen / mes</div><div class="stat-value ${balance>=0?'text-green':'text-red'}">${fmt(balance,Engine.currency)}</div></div>
 </div>
-${expenses.length === 0 ? `
-  <div class="empty-state">
-    <div class="empty-icon">🗡️</div>
-    <h3>Sin gastos registrados</h3>
-    <p>Añade tus gastos fijos para ver el balance real</p>
-  </div>
-` : `
+
+<div class="flex justify-between items-center mb-12">
+  <div class="card-title">💰 Ingresos fijos</div>
+  <button class="btn btn-success btn-sm" onclick="openIncomeForm()">+ Añadir</button>
+</div>
+<div class="card table-scroll mb-16">
+  <table class="rpg-table"><thead><tr>
+    <th>Nombre</th><th>Cantidad</th><th class="col-hide-mobile">Frecuencia</th>
+    <th class="col-hide-mobile">Categoría</th><th>Activo</th><th>Acciones</th>
+  </tr></thead><tbody>${incomeRows()}</tbody></table>
+</div>
+
+<div class="flex justify-between items-center mb-12">
+  <div class="card-title">🗡️ Gastos fijos</div>
+  <button class="btn btn-danger btn-sm" onclick="openExpenseForm()">+ Añadir</button>
+</div>
 <div class="card table-scroll">
-  <table class="rpg-table">
-    <thead><tr>
-      <th>Nombre</th><th>Cantidad</th><th class="col-hide-mobile">Frecuencia</th>
-      <th class="col-hide-mobile">Tipo</th><th class="col-hide-mobile">Categoría</th><th class="col-hide-mobile">Obligatorio</th><th>Estado</th><th>Acciones</th>
-    </tr></thead>
-    <tbody>
-      ${expenses.map(e => {
-        const cat = CATEGORIES[e.category] || CATEGORIES.other;
-        return `<tr>
-          <td><strong>${e.name}</strong></td>
-          <td><span class="chip chip-expense">-${fmt(e.amount, Engine.currency)}</span></td>
-          <td class="col-hide-mobile">${FREQ_LABELS[e.frequency] || e.frequency}</td>
-          <td class="col-hide-mobile"><span class="badge badge-${e.type}">${e.type === 'recurring' ? 'Recurrente' : e.type === 'planned' ? 'Planificado' : 'Extra'}</span></td>
-          <td class="col-hide-mobile">${cat.icon} ${cat.label}</td>
-          <td class="col-hide-mobile" style="text-align:center">${e.mandatory ? '🔴' : '⚪'}</td>
-          <td>
-            <label class="toggle">
-              <input type="checkbox" ${e.active !== false ? 'checked' : ''} onchange="toggleItem('expenses','${e.id}',this.checked)">
-              <span class="toggle-slider"></span>
-            </label>
-          </td>
-          <td style="display:flex;gap:6px">
-            <button class="btn btn-sm btn-primary btn-icon" onclick="openExpenseForm('${e.id}')">✏️</button>
-            <button class="btn btn-sm btn-danger btn-icon" onclick="deleteItem('expenses','${e.id}')">🗑️</button>
-          </td>
-        </tr>`;
-      }).join('')}
-    </tbody>
-  </table>
-</div>`}`;
+  <table class="rpg-table"><thead><tr>
+    <th>Nombre</th><th>Cantidad</th><th class="col-hide-mobile">Frecuencia</th>
+    <th class="col-hide-mobile">Categoría</th><th>Activo</th><th>Acciones</th>
+  </tr></thead><tbody>${expenseRows()}</tbody></table>
+</div>`;
 }
 
-// ===================== TRANSACTIONS =====================
-function renderTransactions() {
+// ===================== DIARIO DE CAMPAÑA =====================
+function renderDiario() {
   const txs = DB.get().transactions.slice().sort((a,b) => b.date.localeCompare(a.date));
+  const liquid = Engine.liquidBalance();
 
   return `
 <div class="section-header">
-  <h2 class="section-title">📜 Crónica de Batalla</h2>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-success btn-sm" onclick="openTxForm('income')">+ Ingreso</button>
-    <button class="btn btn-danger btn-sm" onclick="openTxForm('expense')">+ Gasto</button>
-  </div>
+  <h2 class="section-title">⚔️ Diario de Campaña</h2>
+  <button class="btn btn-primary" onclick="openTxForm(null)">+ Anotar</button>
+</div>
+<div class="card mb-16" style="display:flex;gap:20px;flex-wrap:wrap;align-items:center">
+  <div><div class="stat-label">Balance líquido actual</div><div class="stat-value ${liquid>=0?'text-gold':'text-red'}" style="font-size:22px">${fmt(liquid,Engine.currency)}</div></div>
+  <div><div class="stat-label">Movimientos</div><div class="stat-value">${txs.length}</div></div>
 </div>
 ${txs.length === 0 ? `
   <div class="empty-state">
-    <div class="empty-icon">📜</div>
-    <h3>Sin movimientos</h3>
-    <p>Registra tus ingresos y gastos reales</p>
+    <div class="empty-icon">⚔️</div>
+    <h3>Sin movimientos anotados</h3>
+    <p>Anota tus ingresos y gastos reales del día a día</p>
   </div>
 ` : `
 <div class="tx-list">
@@ -500,6 +497,210 @@ ${budgets.length === 0 ? `
 </div>`}`;
 }
 
+// ===================== COFRES DEL AVENTURERO =====================
+const VAULT_ICONS = ['🏦','💎','🪙','🏴‍☠️','⚗️','🌱','📈','🏛️','🔐','💼'];
+
+function renderCofres() {
+  const vaults = DB.get().vaults || [];
+  const totalInVaults = Engine.totalVaultsBalance();
+  const liquid = Engine.liquidBalance();
+
+  return `
+<div class="section-header">
+  <h2 class="section-title">🏦 Cofres del Aventurero</h2>
+  <button class="btn btn-gold" onclick="openVaultForm()">+ Nuevo Cofre</button>
+</div>
+<div class="stat-cards mb-16">
+  <div class="stat-card savings"><div class="stat-icon">🏦</div><div class="stat-label">Total en cofres</div><div class="stat-value text-blue">${fmt(totalInVaults,Engine.currency)}</div></div>
+  <div class="stat-card balance"><div class="stat-icon">💰</div><div class="stat-label">Balance líquido</div><div class="stat-value ${liquid>=0?'text-gold':'text-red'}">${fmt(liquid,Engine.currency)}</div></div>
+  <div class="stat-card"><div class="stat-icon">👑</div><div class="stat-label">Patrimonio total</div><div class="stat-value text-gold">${fmt(liquid+totalInVaults,Engine.currency)}</div></div>
+</div>
+${vaults.length === 0 ? `
+  <div class="empty-state">
+    <div class="empty-icon">🏦</div>
+    <h3>Sin cofres</h3>
+    <p>Crea un cofre para el dinero que tienes invertido o ahorrando fuera de tu cuenta corriente</p>
+  </div>
+` : vaults.map(v => {
+    const bal = Engine.vaultBalance(v.id);
+    const entries = (DB.get().vaultEntries || []).filter(e => e.vaultId === v.id).slice().sort((a,b) => b.date.localeCompare(a.date));
+    const gain = bal.generated - (bal.deposited - (bal.balance + bal.sold - bal.generated));
+    const isProfit = bal.generated > 0;
+    return `
+    <div class="card mb-16">
+      <div class="flex justify-between items-center mb-12">
+        <div class="flex gap-8 items-center">
+          <span style="font-size:28px">${v.icon || '🏦'}</span>
+          <div>
+            <div class="font-cinzel" style="font-size:16px;color:var(--gold)">${v.name}</div>
+            <div class="text-dim" style="font-size:11px">Creado ${v.createdAt || ''}</div>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="font-cinzel" style="font-size:22px;color:var(--blue)">${fmt(bal.balance,Engine.currency)}</div>
+          <div class="text-dim" style="font-size:11px">saldo actual</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div class="card" style="flex:1;min-width:100px;padding:10px;text-align:center;border-color:rgba(64,128,240,0.3)">
+          <div class="text-dim" style="font-size:10px;text-transform:uppercase;letter-spacing:1px">Ingresado</div>
+          <div class="font-cinzel" style="color:var(--blue)">${fmt(bal.deposited,Engine.currency)}</div>
+        </div>
+        <div class="card" style="flex:1;min-width:100px;padding:10px;text-align:center;border-color:rgba(64,192,112,0.3)">
+          <div class="text-dim" style="font-size:10px;text-transform:uppercase;letter-spacing:1px">Generado</div>
+          <div class="font-cinzel" style="color:var(--green)">${fmt(bal.generated,Engine.currency)}</div>
+        </div>
+        <div class="card" style="flex:1;min-width:100px;padding:10px;text-align:center;border-color:rgba(240,192,64,0.3)">
+          <div class="text-dim" style="font-size:10px;text-transform:uppercase;letter-spacing:1px">Retirado</div>
+          <div class="font-cinzel" style="color:var(--gold)">${fmt(bal.sold,Engine.currency)}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="btn btn-primary btn-sm" onclick="openVaultEntry('${v.id}','deposit')">💰 Ingresar</button>
+        <button class="btn btn-success btn-sm" onclick="openVaultEntry('${v.id}','generated')">✨ Generado</button>
+        <button class="btn btn-gold btn-sm" onclick="openVaultEntry('${v.id}','sale')">📤 Vender / Retirar</button>
+        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteItem('vaults','${v.id}')" style="margin-left:auto">🗑️</button>
+      </div>
+
+      ${entries.length ? `
+      <div class="divider"></div>
+      <div class="card-title" style="font-size:10px;margin-bottom:8px">Historial</div>
+      <div class="contrib-list">
+        ${entries.slice(0,8).map(e => {
+          const labels = { deposit:'💰 Ingresado', generated:'✨ Generado', sale:'📤 Retirado' };
+          const colors = { deposit:'var(--blue)', generated:'var(--green)', sale:'var(--gold)' };
+          return `<div class="contrib-item">
+            <span style="color:${colors[e.type]}">${labels[e.type]}: ${fmt(e.amount,Engine.currency)}</span>
+            <span class="text-dim">${e.date}${e.note ? ' · '+e.note : ''}</span>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('')}`;
+}
+
+function openVaultForm() {
+  const today = new Date().toISOString().split('T')[0];
+  openModal(`
+    <div class="modal-title">🏦 Nuevo Cofre</div>
+    <form class="rpg-form" onsubmit="saveVault(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre</label>
+          <input name="name" required placeholder="Mintos, Acciones Tesla...">
+        </div>
+        <div class="form-group">
+          <label>Icono</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+            ${VAULT_ICONS.map((ic,i) => `
+              <label style="cursor:pointer">
+                <input type="radio" name="icon" value="${ic}" ${i===0?'checked':''} style="display:none">
+                <span class="avatar-opt" style="font-size:22px;padding:5px 7px;border-radius:6px;border:2px solid ${i===0?'var(--gold)':'var(--border)'};display:inline-block">${ic}</span>
+              </label>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Saldo inicial (opcional — si ya tienes dinero ahí)</label>
+        <input name="initialAmount" type="number" step="0.01" min="0" placeholder="0.00" value="0">
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">
+          Este importe se resta de tu balance líquido (es dinero que ya moviste)
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Fecha de creación</label>
+        <input name="createdAt" type="date" value="${today}">
+      </div>
+      <button type="submit" class="btn btn-gold">🏦 Crear Cofre</button>
+    </form>`);
+
+  document.querySelectorAll('input[name="icon"]').forEach(r => {
+    r.addEventListener('change', () => {
+      document.querySelectorAll('.avatar-opt').forEach(s => s.style.borderColor = 'var(--border)');
+      r.nextElementSibling.style.borderColor = 'var(--gold)';
+    });
+  });
+}
+
+function saveVault(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const initial = parseFloat(fd.get('initialAmount') || 0);
+  const vaultId = 'v_' + Date.now();
+  DB.addItem('vaults', {
+    id: vaultId,
+    name: fd.get('name'),
+    icon: fd.get('icon') || '🏦',
+    createdAt: fd.get('createdAt'),
+    active: true
+  });
+  if (initial > 0) {
+    DB.addItem('vaultEntries', {
+      vaultId,
+      type: 'deposit',
+      amount: initial,
+      date: fd.get('createdAt'),
+      note: 'Saldo inicial'
+    });
+  }
+  toast('¡Cofre creado! 🏦', 'success');
+  closeModal();
+  refresh();
+}
+
+function openVaultEntry(vaultId, type) {
+  const vault = DB.get().vaults.find(v => v.id === vaultId);
+  const bal   = Engine.vaultBalance(vaultId);
+  const today = new Date().toISOString().split('T')[0];
+  const titles  = { deposit:'💰 Ingresar al cofre', generated:'✨ Anotar rendimiento', sale:'📤 Vender / Retirar' };
+  const descs   = {
+    deposit:   `Dinero que sale de tu balance líquido y entra al cofre. Saldo actual: <strong>${fmt(bal.balance,Engine.currency)}</strong>`,
+    generated: `Dinero nuevo generado por el cofre (intereses, rendimiento). No sale de ningún sitio — se suma al cofre y al patrimonio total.`,
+    sale:      `Dinero que sale del cofre y vuelve a tu balance líquido. Saldo actual: <strong>${fmt(bal.balance,Engine.currency)}</strong>`
+  };
+  const btnClass = { deposit:'btn-primary', generated:'btn-success', sale:'btn-gold' };
+
+  openModal(`
+    <div class="modal-title">${titles[type]} — ${vault.name}</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.5">${descs[type]}</p>
+    <form class="rpg-form" onsubmit="saveVaultEntry(event,'${vaultId}','${type}')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Importe (€)</label>
+          <input name="amount" type="number" step="0.01" min="0.01" required placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input name="date" type="date" value="${today}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Nota (opcional)</label>
+        <input name="note" placeholder="${type==='generated'?'Intereses abril...':''}">
+      </div>
+      <button type="submit" class="btn ${btnClass[type]}">${titles[type]}</button>
+    </form>`);
+}
+
+function saveVaultEntry(e, vaultId, type) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const amount = parseFloat(fd.get('amount'));
+  DB.addItem('vaultEntries', {
+    vaultId,
+    type,
+    amount,
+    date: fd.get('date'),
+    note: fd.get('note') || ''
+  });
+  const labels = { deposit:'💰 Ingresado al cofre', generated:'✨ Rendimiento anotado', sale:'📤 Retirado del cofre' };
+  toast(labels[type] + ': ' + fmt(amount, Engine.currency), 'success');
+  closeModal();
+  refresh();
+}
+
 // ===================== GOALS =====================
 function renderGoals() {
   const goals = DB.get().goals;
@@ -507,7 +708,10 @@ function renderGoals() {
   return `
 <div class="section-header">
   <h2 class="section-title">🏆 Misiones de Ahorro</h2>
-  <button class="btn btn-gold" onclick="openGoalForm()">+ Nueva Misión</button>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-sm btn-primary" onclick="openRepartirForm()">⚖️ Repartir</button>
+    <button class="btn btn-gold" onclick="openGoalForm()">+ Nueva Misión</button>
+  </div>
 </div>
 ${goals.length === 0 ? `
   <div class="empty-state">
@@ -566,7 +770,7 @@ function renderAchievements() {
 
   return `
 <div class="section-header">
-  <h2 class="section-title">🎖️ Logros</h2>
+  <h2 class="section-title">🎖️ Pergamino de Honor</h2>
   <span class="text-dim">${unlocked} / ${achs.length} desbloqueados</span>
 </div>
 <div class="achievements-grid">
@@ -865,6 +1069,105 @@ function saveBudget(e) {
   const { newlyUnlocked } = Engine.checkAchievements();
   newlyUnlocked.forEach(a => toast(`🎖️ ¡Logro desbloqueado! "${a.name}"`, 'achievement', a.icon));
   toast('¡Escudo creado! 🛡️', 'success');
+  closeModal();
+  refresh();
+}
+
+function openRepartirForm() {
+  const goals = DB.get().goals.filter(g => g.active);
+  const liquid = Engine.liquidBalance();
+  const today = new Date().toISOString().split('T')[0];
+
+  if (!goals.length) {
+    toast('No hay misiones activas', 'warning', '🏆');
+    return;
+  }
+
+  openModal(`
+<div class="modal-title">⚖️ Repartir balance entre misiones</div>
+<div style="margin-bottom:16px;padding:12px;border-radius:8px;background:rgba(64,128,240,0.1);border:1px solid rgba(64,128,240,0.3)">
+  <div class="text-dim" style="font-size:11px;text-transform:uppercase;letter-spacing:1px">Balance líquido disponible</div>
+  <div class="font-cinzel" style="font-size:22px;color:${liquid>=0?'var(--gold)':'var(--red)'}" id="repartir-liquid">${fmt(liquid, Engine.currency)}</div>
+</div>
+<form class="rpg-form" onsubmit="saveRepartir(event)">
+  <input type="hidden" name="date" value="${today}">
+  ${goals.map(g => {
+    const prog = Engine.goalProgress(g);
+    const remaining = Math.max(g.targetAmount - prog.total, 0);
+    return `
+  <div class="card mb-12" style="padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div><span style="font-size:18px;margin-right:6px">${g.icon||'🎯'}</span><strong>${g.name}</strong></div>
+      <div class="text-dim" style="font-size:11px">Faltan ${fmt(remaining,Engine.currency)}</div>
+    </div>
+    ${progressBar(prog.pct,'gold',6)}
+    <div class="flex justify-between mt-8" style="font-size:11px;color:var(--text-dim)">
+      <span>${fmt(prog.total,Engine.currency)} ahorrado</span>
+      <span>${prog.pct.toFixed(0)}%</span>
+    </div>
+    <div class="form-group" style="margin-top:10px;margin-bottom:0">
+      <label style="font-size:11px">Aportar a esta misión (€)</label>
+      <input name="goal_${g.id}" type="number" step="0.01" min="0" placeholder="0.00" value="0"
+        oninput="updateRepartirTotal()" style="margin-top:4px">
+    </div>
+  </div>`;
+  }).join('')}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--border);margin-bottom:16px">
+    <span class="text-dim" style="font-size:13px">Total a repartir</span>
+    <span class="font-cinzel text-gold" id="repartir-total" style="font-size:16px">0 €</span>
+  </div>
+  <button type="submit" class="btn btn-gold">⚖️ Confirmar reparto</button>
+</form>`);
+
+  // Store goal ids for total calculation
+  window._repartirGoalIds = goals.map(g => g.id);
+  window._repartirLiquid = liquid;
+}
+
+function updateRepartirTotal() {
+  const ids = window._repartirGoalIds || [];
+  let total = 0;
+  ids.forEach(id => {
+    const el = document.querySelector(`input[name="goal_${id}"]`);
+    if (el) total += parseFloat(el.value || 0);
+  });
+  const el = document.getElementById('repartir-total');
+  if (el) {
+    el.textContent = fmt(total, Engine.currency);
+    el.style.color = total > (window._repartirLiquid || 0) ? 'var(--red)' : 'var(--gold)';
+  }
+}
+
+function saveRepartir(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const date = fd.get('date');
+  const goals = DB.get().goals.filter(g => g.active);
+  const liquid = Engine.liquidBalance();
+
+  let total = 0;
+  const contribs = [];
+  goals.forEach(g => {
+    const amount = parseFloat(fd.get(`goal_${g.id}`) || 0);
+    if (amount > 0) {
+      total += amount;
+      contribs.push({ goalId: g.id, amount, date, source: 'manual', note: 'Reparto' });
+    }
+  });
+
+  if (total <= 0) {
+    toast('Introduce al menos un importe', 'warning', '⚠️');
+    return;
+  }
+  if (total > liquid) {
+    toast(`No tienes suficiente balance líquido (${fmt(liquid, Engine.currency)})`, 'error', '💀');
+    return;
+  }
+
+  contribs.forEach(c => DB.addItem('goalContributions', c));
+  const { newlyUnlocked } = Engine.checkAchievements();
+  newlyUnlocked.forEach(a => toast(`🎖️ ¡Logro desbloqueado! "${a.name}"`, 'achievement', a.icon));
+  toast(`⚖️ ${fmt(total, Engine.currency)} repartidos entre ${contribs.length} misiones`, 'success');
   closeModal();
   refresh();
 }

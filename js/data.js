@@ -10,6 +10,8 @@ const DEFAULT_DATA = {
   budgets: [],
   goals: [],
   goalContributions: [],
+  vaults: [],
+  vaultEntries: [],
   achievements: [],
   stats: { totalSaved: 0, streakDays: 0, lastActivityDate: null }
 };

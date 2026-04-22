@@ -118,6 +118,35 @@ const Engine = {
     return this.realIncomeInPeriod(period) - this.realExpenseInPeriod(period);
   },
 
+  // Liquid = all income tx - all expense tx - vault deposits + vault sales
+  liquidBalance() {
+    const entries = this.data.vaultEntries || [];
+    const txIncome  = this.data.transactions.filter(t => t.kind === 'income').reduce((s,t) => s + t.amount, 0);
+    const txExpense = this.data.transactions.filter(t => t.kind === 'expense').reduce((s,t) => s + t.amount, 0);
+    const deposits  = entries.filter(e => e.type === 'deposit').reduce((s,e) => s + e.amount, 0);
+    const sales     = entries.filter(e => e.type === 'sale').reduce((s,e) => s + e.amount, 0);
+    return txIncome - txExpense - deposits + sales;
+  },
+
+  // Balance of a single vault: deposits + generated - sold
+  vaultBalance(vaultId) {
+    const entries   = (this.data.vaultEntries || []).filter(e => e.vaultId === vaultId);
+    const deposited = entries.filter(e => e.type === 'deposit').reduce((s,e) => s + e.amount, 0);
+    const generated = entries.filter(e => e.type === 'generated').reduce((s,e) => s + e.amount, 0);
+    const sold      = entries.filter(e => e.type === 'sale').reduce((s,e) => s + e.amount, 0);
+    return { balance: deposited + generated - sold, deposited, generated, sold };
+  },
+
+  totalVaultsBalance() {
+    return (this.data.vaults || [])
+      .filter(v => v.active !== false)
+      .reduce((s,v) => s + this.vaultBalance(v.id).balance, 0);
+  },
+
+  totalWealth() {
+    return this.liquidBalance() + this.totalVaultsBalance();
+  },
+
   // Budget status per category
   budgetStatus() {
     const period = 'month';

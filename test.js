@@ -419,6 +419,95 @@ test('achievement saver_100 cuenta contribuciones de todas las metas', () => {
 });
 
 // ===========================================
+console.log('\n🏦 9. COFRES (vaultBalance / liquidBalance / totalWealth)');
+// ===========================================
+
+test('cofre vacío → balance 0', () => {
+  Engine.init(makeData({ vaults:[{id:'v1',name:'Test',active:true}], vaultEntries:[] }));
+  const b = Engine.vaultBalance('v1');
+  assertEq(b.balance, 0, 'balance inicial');
+});
+
+test('depósito de 500€ → balance 500', () => {
+  Engine.init(makeData({
+    vaults:[{id:'v1',name:'Test',active:true}],
+    vaultEntries:[{vaultId:'v1',type:'deposit',amount:500,date:date(1)}]
+  }));
+  const b = Engine.vaultBalance('v1');
+  assertEq(b.balance, 500, 'después de depósito');
+  assertEq(b.deposited, 500, 'deposited=500');
+});
+
+test('depósito 500 + generado 50 → balance 550', () => {
+  Engine.init(makeData({
+    vaults:[{id:'v1',name:'Test',active:true}],
+    vaultEntries:[
+      {vaultId:'v1',type:'deposit',amount:500,date:date(1)},
+      {vaultId:'v1',type:'generated',amount:50,date:date(5)}
+    ]
+  }));
+  const b = Engine.vaultBalance('v1');
+  assertEq(b.balance, 550, 'depósito + rendimiento');
+  assertEq(b.generated, 50, 'generated=50');
+});
+
+test('depósito 500, venta 200 → balance 300', () => {
+  Engine.init(makeData({
+    vaults:[{id:'v1',name:'Test',active:true}],
+    vaultEntries:[
+      {vaultId:'v1',type:'deposit',amount:500,date:date(1)},
+      {vaultId:'v1',type:'sale',amount:200,date:date(10)}
+    ]
+  }));
+  const b = Engine.vaultBalance('v1');
+  assertEq(b.balance, 300, 'balance tras venta');
+  assertEq(b.sold, 200, 'sold=200');
+});
+
+test('liquidBalance: ingresos tx - gastos tx - depósitos + ventas', () => {
+  Engine.init(makeData({
+    transactions:[
+      {id:'t1',kind:'income', amount:1000,category:'salary',date:date(1)},
+      {id:'t2',kind:'expense',amount:300, category:'food',  date:date(5)}
+    ],
+    vaults:[{id:'v1',name:'Test',active:true}],
+    vaultEntries:[
+      {vaultId:'v1',type:'deposit',amount:200,date:date(2)},
+      {vaultId:'v1',type:'sale',   amount:50, date:date(8)}
+    ]
+  }));
+  // 1000 - 300 - 200 + 50 = 550
+  assertEq(Engine.liquidBalance(), 550, 'liquid balance 550');
+});
+
+test('totalWealth = liquid + vault balances', () => {
+  Engine.init(makeData({
+    transactions:[{id:'t1',kind:'income',amount:1000,category:'salary',date:date(1)}],
+    vaults:[{id:'v1',name:'Test',active:true}],
+    vaultEntries:[{vaultId:'v1',type:'deposit',amount:400,date:date(2)}]
+  }));
+  // liquid = 1000 - 400 = 600, vault = 400, total = 1000
+  assertEq(Engine.liquidBalance(), 600, 'liquid 600');
+  assertEq(Engine.totalVaultsBalance(), 400, 'vaults 400');
+  assertEq(Engine.totalWealth(), 1000, 'wealth 1000');
+});
+
+test('dinero generado en cofre aumenta riqueza total sin reducir liquido', () => {
+  Engine.init(makeData({
+    transactions:[{id:'t1',kind:'income',amount:1000,category:'salary',date:date(1)}],
+    vaults:[{id:'v1',name:'Test',active:true}],
+    vaultEntries:[
+      {vaultId:'v1',type:'deposit',   amount:400,date:date(2)},
+      {vaultId:'v1',type:'generated', amount:50, date:date(5)}
+    ]
+  }));
+  // liquid = 1000-400 = 600 (no cambia por generated), vault = 450, total = 1050
+  assertEq(Engine.liquidBalance(), 600, 'liquid no cambia con generated');
+  assertEq(Engine.totalVaultsBalance(), 450, 'vault 450 con rendimiento');
+  assertEq(Engine.totalWealth(), 1050, 'wealth aumenta por rendimiento');
+});
+
+// ===========================================
 console.log('\n📋 RESUMEN');
 // ===========================================
 console.log(`\n  Total: ${passed + failed} tests — ✅ ${passed} pasados — ❌ ${failed} fallados`);

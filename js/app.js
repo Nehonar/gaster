@@ -20,10 +20,10 @@ function refresh() {
   const container = document.getElementById('view-container');
   switch (currentView) {
     case 'dashboard':    container.innerHTML = renderDashboard(); break;
-    case 'incomes':      container.innerHTML = renderIncomes(); break;
-    case 'expenses':     container.innerHTML = renderExpenses(); break;
-    case 'transactions': container.innerHTML = renderTransactions(); break;
+    case 'contratos':    container.innerHTML = renderContratos(); break;
+    case 'transactions': container.innerHTML = renderDiario(); break;
     case 'budgets':      container.innerHTML = renderBudgets(); break;
+    case 'vaults':       container.innerHTML = renderCofres(); break;
     case 'goals':        container.innerHTML = renderGoals(); break;
     case 'achievements': container.innerHTML = renderAchievements(); break;
     case 'backup':       container.innerHTML = renderBackup(); break;
