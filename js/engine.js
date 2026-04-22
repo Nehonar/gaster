@@ -152,13 +152,33 @@ const Engine = {
     return { total, pct, remaining, monthsLeft, contribs };
   },
 
+  // Budget XP from completed past months only — so XP never decreases
+  _budgetXPHistory() {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const pastMonths = [...new Set(
+      this.data.transactions.map(tx => tx.date.slice(0, 7))
+    )].filter(m => m < currentMonth);
+
+    let xp = 0;
+    for (const month of pastMonths) {
+      const txs = this.data.transactions.filter(tx => tx.date.startsWith(month));
+      for (const b of this.data.budgets) {
+        const objective = toMonthly(b.amount, b.frequency);
+        const spent = txs
+          .filter(tx => tx.kind === 'expense' && tx.category === b.category)
+          .reduce((s, tx) => s + tx.amount, 0);
+        xp += Math.max(0, objective - spent);
+      }
+    }
+    return xp;
+  },
+
   // Player XP earned through real actions only
   playerLevel() {
     const data = this.data;
 
-    // 1. Budget adherence: 1 XP per € under budget (this month)
-    const budgets = this.budgetStatus();
-    const budgetXP = budgets.reduce((sum, b) => sum + Math.max(0, b.diff), 0);
+    // 1. Budget adherence: XP from PAST closed months only (never decreases)
+    const budgetXP = this._budgetXPHistory();
 
     // 2. Goal contributions: 0.5 XP per € contributed
     const contribXP = data.goalContributions.reduce((s, c) => s + c.amount, 0) * 0.5;
@@ -214,8 +234,8 @@ const Engine = {
     const newlyUnlocked = [];
 
     const monthly = this.savingsMonthly();
-    const totalSaved = data.goals.reduce((s, g) => s + (g.currentAmount || 0), 0);
-    const goalsCompleted = data.goals.filter(g => g.currentAmount >= g.targetAmount).length;
+    const totalSaved = data.goals.reduce((s, g) => s + this.goalProgress(g).total, 0);
+    const goalsCompleted = data.goals.filter(g => this.goalProgress(g).total >= g.targetAmount).length;
     const txCount = data.transactions.length;
 
     const ACHIEVEMENTS = [
