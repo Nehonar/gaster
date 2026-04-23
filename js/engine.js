@@ -48,6 +48,15 @@ function fmtShort(amount, currency = 'EUR') {
   return amount.toFixed(0) + ' ' + sym;
 }
 
+function weekStartOf(dateStr) {
+  const d = new Date(dateStr);
+  const day = d.getDay() || 7;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() - day + 1);
+  mon.setHours(0, 0, 0, 0);
+  return mon;
+}
+
 function getPeriodDates(period) {
   const now = new Date();
   let start, end;
@@ -147,13 +156,12 @@ const Engine = {
     return this.liquidBalance() + this.totalVaultsBalance();
   },
 
-  // Budget status per category
+  // Budget status per category — each budget compared against its own period
   budgetStatus() {
-    const period = 'month';
-    const txs = this.transactionsInPeriod(period);
-
     return this.data.budgets.map(b => {
-      const objective = toMonthly(b.amount, b.frequency);
+      const period = b.frequency === 'weekly' ? 'week' : b.frequency === 'yearly' ? 'year' : 'month';
+      const txs = this.transactionsInPeriod(period);
+      const objective = b.amount;
       const spent = txs
         .filter(tx => tx.kind === 'expense' && tx.category === b.category)
         .reduce((s, tx) => s + tx.amount, 0);
@@ -166,7 +174,7 @@ const Engine = {
       else if (overPct >= 80) status = 'warn';
 
       const cat = CATEGORIES[b.category] || CATEGORIES.other;
-      return { ...b, objective, spent, diff, pct, overPct, status, catLabel: cat.label, catIcon: b.icon || cat.icon };
+      return { ...b, objective, spent, diff, pct, overPct, status, catLabel: cat.label, catIcon: b.icon || cat.icon, period };
     });
   },
 
@@ -181,22 +189,44 @@ const Engine = {
     return { total, pct, remaining, monthsLeft, contribs };
   },
 
-  // Budget XP from completed past months only — so XP never decreases
+  // Budget XP from completed past periods only — so XP never decreases
   _budgetXPHistory() {
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const pastMonths = [...new Set(
-      this.data.transactions.map(tx => tx.date.slice(0, 7))
-    )].filter(m => m < currentMonth);
+    const now = new Date();
+    const currentMonth = now.toISOString().slice(0, 7);
+    const curWeekStr = weekStartOf(now.toISOString().slice(0, 10)).toISOString().slice(0, 10);
 
     let xp = 0;
-    for (const month of pastMonths) {
-      const txs = this.data.transactions.filter(tx => tx.date.startsWith(month));
-      for (const b of this.data.budgets) {
+    for (const b of this.data.budgets) {
+      if (b.frequency === 'weekly') {
+        const pastWeeks = [...new Set(
+          this.data.transactions.map(tx => weekStartOf(tx.date).toISOString().slice(0, 10))
+        )].filter(w => w < curWeekStr);
+
+        for (const wStr of pastWeeks) {
+          const wStart = new Date(wStr);
+          const wEnd = new Date(wStr);
+          wEnd.setDate(wStart.getDate() + 6);
+          wEnd.setHours(23, 59, 59, 999);
+          const spent = this.data.transactions
+            .filter(tx => {
+              const d = new Date(tx.date);
+              return tx.kind === 'expense' && tx.category === b.category && d >= wStart && d <= wEnd;
+            })
+            .reduce((s, tx) => s + tx.amount, 0);
+          xp += Math.max(0, b.amount - spent);
+        }
+      } else {
         const objective = toMonthly(b.amount, b.frequency);
-        const spent = txs
-          .filter(tx => tx.kind === 'expense' && tx.category === b.category)
-          .reduce((s, tx) => s + tx.amount, 0);
-        xp += Math.max(0, objective - spent);
+        const pastMonths = [...new Set(
+          this.data.transactions.map(tx => tx.date.slice(0, 7))
+        )].filter(m => m < currentMonth);
+
+        for (const month of pastMonths) {
+          const spent = this.data.transactions
+            .filter(tx => tx.kind === 'expense' && tx.category === b.category && tx.date.startsWith(month))
+            .reduce((s, tx) => s + tx.amount, 0);
+          xp += Math.max(0, objective - spent);
+        }
       }
     }
     return xp;

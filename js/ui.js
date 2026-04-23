@@ -299,7 +299,7 @@ function renderDashboard() {
           </div>
           ${progressBar(b.overPct, b.status === 'ok' ? 'green' : b.status === 'warn' ? 'yellow' : 'red')}
           <div class="bar-label">
-            <span>${fmtShort(b.spent, Engine.currency)} gastado</span>
+            <span>${fmtShort(b.spent, Engine.currency)} ${{week:'esta semana',month:'este mes',year:'este año'}[b.period]||''}</span>
             <span>${fmtShort(b.objective, Engine.currency)} obj.</span>
           </div>
         </div>
@@ -472,7 +472,7 @@ ${budgets.length === 0 ? `
       <div class="budget-header">
         <div class="budget-name">${b.catIcon} ${b.catLabel}
           <span class="text-dim" style="font-size:11px;font-weight:normal">
-            · ${fmtShort(b.amount, Engine.currency)} / ${FREQ_LABELS[b.frequency]}
+            · ${fmtShort(b.amount, Engine.currency)} / ${{week:'semana',month:'mes',year:'año'}[b.period]||b.period}
           </span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">

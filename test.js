@@ -78,6 +78,11 @@ const LAST_MONTH = (() => {
   d.setMonth(d.getMonth() - 1);
   return d.toISOString().slice(0, 7);
 })();
+const LAST_WEEK_DATE = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().slice(0, 10);
+})();
 const date = (d) => `${THIS_MONTH}-${String(d).padStart(2,'0')}`;
 const lastDate = (d) => `${LAST_MONTH}-${String(d).padStart(2,'0')}`;
 
@@ -241,13 +246,14 @@ test('gasto por encima del presupuesto → diff negativo', () => {
   assertEq(b.diff, -50, 'diff negativo');
   assert(b.status === 'over', 'status over');
 });
-test('presupuesto semanal se convierte a mensual para comparar', () => {
+test('presupuesto semanal compara directamente contra esta semana', () => {
   Engine.init(makeData({
     budgets: [{ id:'b1', category:'food', amount:50, frequency:'weekly' }],
     transactions: []
   }));
   const [b] = Engine.budgetStatus();
-  assertEq(b.objective, 50*52/12, 'objetivo semanal→mensual');
+  assertEq(b.objective, 50, 'objetivo semanal = 50 directo, no convertido');
+  assert(b.period === 'week', 'period = week');
 });
 test('solo se cuentan gastos, no ingresos, en el presupuesto', () => {
   Engine.init(makeData({
@@ -343,6 +349,25 @@ test('aportar 100€ a meta da 50 XP de contribuciones', () => {
   const lvl = Engine.playerLevel();
   assertEq(lvl.breakdown.contribs, 50, '100 × 0.5 = 50 XP');
 });
+test('presupuesto semanal respetado la semana pasada da XP', () => {
+  Engine.init(makeData({
+    budgets: [{ id:'b1', category:'food', amount:100, frequency:'weekly' }],
+    transactions: [{ id:'t1', kind:'expense', amount:60, category:'food', date:LAST_WEEK_DATE }]
+  }));
+  const lvl = Engine.playerLevel();
+  assertEq(lvl.breakdown.budget, 40, 'semana pasada: 100-60=40 XP');
+});
+
+test('presupuesto semanal de esta semana NO da XP todavía', () => {
+  const today = new Date().toISOString().slice(0, 10);
+  Engine.init(makeData({
+    budgets: [{ id:'b1', category:'food', amount:100, frequency:'weekly' }],
+    transactions: [{ id:'t1', kind:'expense', amount:30, category:'food', date:today }]
+  }));
+  const lvl = Engine.playerLevel();
+  assertEq(lvl.breakdown.budget, 0, 'semana actual no cuenta hasta que cierre');
+});
+
 test('presupuesto respetado el mes pasado da XP (mes actual no cuenta hasta cerrar)', () => {
   Engine.init(makeData({
     budgets: [{ id:'b1', category:'food', amount:200, frequency:'monthly' }],
