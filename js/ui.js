@@ -163,7 +163,7 @@ function renderDashboard() {
 
   <!-- BARRA DE VIDA -->
   ${hp.objective > 0 ? (() => {
-    const hpState = hp.overPct >= 100 ? 'over' : hp.overPct >= 80 ? 'warn' : 'ok';
+    const hpState = hp.pct > 50 ? 'ok' : hp.pct > 20 ? 'warn' : 'over';
     const periodLabel = { month: 'este mes', week: 'esta semana', year: 'este año' }[currentPeriod];
     const hpIcon = hpState === 'ok' ? '❤️' : hpState === 'warn' ? '🟡' : '💀';
     return `
@@ -171,7 +171,7 @@ function renderDashboard() {
     <div class="vida-header">
       <span class="vida-title">${hpIcon} Vida — presupuesto ${periodLabel}</span>
       <span class="vida-numbers">
-        <span class="vida-spent">${fmtShort(hp.spent, Engine.currency)}</span>
+        <span class="vida-spent">${fmtShort(hp.remaining, Engine.currency)}</span>
         <span class="vida-sep">/</span>
         <span class="vida-max">${fmtShort(hp.objective, Engine.currency)}</span>
       </span>
@@ -180,8 +180,10 @@ function renderDashboard() {
       <div class="vida-bar-fill ${hpState}" style="width:${hp.pct.toFixed(1)}%"></div>
     </div>
     <div class="vida-sub">
-      <span>${hpState === 'ok' ? `Te quedan ${fmtShort(hp.remaining, Engine.currency)}` : hpState === 'warn' ? '⚠️ Cerca del límite' : '💀 Presupuesto superado'}</span>
-      <span>${hp.pct.toFixed(0)}% usado</span>
+      <span>${hpState !== 'over'
+        ? `Gastado: ${fmtShort(hp.spent, Engine.currency)}${hp.income > 0 ? ` · Recuperado: +${fmtShort(hp.income, Engine.currency)}` : ''}`
+        : '💀 Sin vida — presupuesto agotado'}</span>
+      <span>${hp.pct.toFixed(0)}% restante</span>
     </div>
   </div>`;
   })() : ''}

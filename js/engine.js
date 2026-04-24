@@ -173,17 +173,19 @@ const Engine = {
 
   // HP: budget for period vs real operational spending
   // Excludes: isImprevisto and fromMission expenses (they don't drain vida)
+  // Income in period refills vida (sells, refunds, extra earnings)
   periodHP(period) {
     const monthly = this.budgetMonthlyTotal();
     const objective = period === 'week' ? monthly * 12 / 52
                     : period === 'year' ? monthly * 12
                     : monthly;
-    const spent = this.transactionsInPeriod(period)
-      .filter(tx => tx.kind === 'expense' && !tx.isImprevisto && !tx.fromMission)
-      .reduce((s, tx) => s + tx.amount, 0);
-    const pct = objective > 0 ? Math.min(spent / objective * 100, 100) : 0;
-    const overPct = objective > 0 ? spent / objective * 100 : 0;
-    return { objective, spent, remaining: Math.max(objective - spent, 0), pct, overPct };
+    const txs = this.transactionsInPeriod(period);
+    const spent  = txs.filter(tx => tx.kind === 'expense' && !tx.isImprevisto && !tx.fromMission).reduce((s, tx) => s + tx.amount, 0);
+    const income = txs.filter(tx => tx.kind === 'income').reduce((s, tx) => s + tx.amount, 0);
+    const net       = Math.max(0, spent - income);
+    const remaining = Math.max(0, objective - net);
+    const pct       = objective > 0 ? (remaining / objective) * 100 : 100;
+    return { objective, spent, income, net, remaining, pct };
   },
 
 

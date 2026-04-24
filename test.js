@@ -468,7 +468,7 @@ test('availableLiquid = liquid - misiones asignadas', () => {
   assertEq(Engine.availableLiquid(), 700, 'disponible = 1000 - 300 = 700');
 });
 
-test('periodHP excluye imprevistos del gasto', () => {
+test('periodHP excluye imprevistos — vida = remaining, no spent', () => {
   Engine.init(makeData({
     budgets:[{id:'b1',category:'food',amount:200,frequency:'monthly'}],
     transactions:[
@@ -478,6 +478,7 @@ test('periodHP excluye imprevistos del gasto', () => {
   }));
   const hp = Engine.periodHP('month');
   assertEq(hp.spent, 80, 'imprevisto no drena vida');
+  assertEq(hp.remaining, 120, 'vida restante = 200 - 80 = 120');
   assertEq(hp.objective, 200, 'objetivo = 200');
 });
 
@@ -491,6 +492,20 @@ test('periodHP excluye pagos de misiones del gasto', () => {
   }));
   const hp = Engine.periodHP('month');
   assertEq(hp.spent, 60, 'pago de misión no drena vida');
+  assertEq(hp.remaining, 140, 'vida restante = 200 - 60 = 140');
+});
+
+test('ingresos del periodo recargan vida', () => {
+  Engine.init(makeData({
+    budgets:[{id:'b1',category:'food',amount:200,frequency:'monthly'}],
+    transactions:[
+      {id:'t1',kind:'expense',amount:150,category:'food', date:date(5)},
+      {id:'t2',kind:'income', amount:50, category:'extra',date:date(8)}
+    ]
+  }));
+  const hp = Engine.periodHP('month');
+  assertEq(hp.net, 100, 'net = 150 - 50 = 100');
+  assertEq(hp.remaining, 100, 'vida restante = 200 - 100 = 100');
 });
 
 test('pago de misión reduce contribuciones asignadas (balance negativo)', () => {
