@@ -444,7 +444,71 @@ test('achievement saver_100 cuenta contribuciones de todas las metas', () => {
 });
 
 // ===========================================
-console.log('\n⚡ 9. ATAQUES DEL DESTINO (imprevistos)');
+console.log('\n❤️  9. VIDA / ESCUDO / MISIONES ASIGNADAS');
+// ===========================================
+
+test('totalMissionsAllocated = suma de contribuciones', () => {
+  const g = { id:'g1', targetAmount:500, currentAmount:0 };
+  Engine.init(makeData({
+    goals:[g],
+    goalContributions:[
+      { id:'c1', goalId:'g1', amount:100, date:date(1) },
+      { id:'c2', goalId:'g1', amount:150, date:date(5) }
+    ]
+  }));
+  assertEq(Engine.totalMissionsAllocated(), 250, 'asignado = 250');
+});
+
+test('availableLiquid = liquid - misiones asignadas', () => {
+  Engine.init(makeData({
+    transactions:[{id:'t1',kind:'income',amount:1000,category:'salary',date:date(1)}],
+    goals:[{id:'g1',targetAmount:500,currentAmount:0}],
+    goalContributions:[{id:'c1',goalId:'g1',amount:300,date:date(2)}]
+  }));
+  assertEq(Engine.availableLiquid(), 700, 'disponible = 1000 - 300 = 700');
+});
+
+test('periodHP excluye imprevistos del gasto', () => {
+  Engine.init(makeData({
+    budgets:[{id:'b1',category:'food',amount:200,frequency:'monthly'}],
+    transactions:[
+      {id:'t1',kind:'expense',amount:80, category:'food',date:date(5),isImprevisto:false},
+      {id:'t2',kind:'expense',amount:500,category:'food',date:date(8),isImprevisto:true}
+    ]
+  }));
+  const hp = Engine.periodHP('month');
+  assertEq(hp.spent, 80, 'imprevisto no drena vida');
+  assertEq(hp.objective, 200, 'objetivo = 200');
+});
+
+test('periodHP excluye pagos de misiones del gasto', () => {
+  Engine.init(makeData({
+    budgets:[{id:'b1',category:'food',amount:200,frequency:'monthly'}],
+    transactions:[
+      {id:'t1',kind:'expense',amount:60, category:'food',date:date(5),isImprevisto:false},
+      {id:'t2',kind:'expense',amount:400,category:'food',date:date(8),fromMission:'g1'}
+    ]
+  }));
+  const hp = Engine.periodHP('month');
+  assertEq(hp.spent, 60, 'pago de misión no drena vida');
+});
+
+test('pago de misión reduce contribuciones asignadas (balance negativo)', () => {
+  const g = { id:'g1', targetAmount:500, currentAmount:0 };
+  Engine.init(makeData({
+    goals:[g],
+    goalContributions:[
+      {id:'c1',goalId:'g1',amount:300,date:date(1)},
+      {id:'c2',goalId:'g1',amount:-200,date:date(5),source:'payment'}
+    ]
+  }));
+  assertEq(Engine.totalMissionsAllocated(), 100, 'asignado = 300 - 200 = 100');
+  const prog = Engine.goalProgress(g);
+  assertEq(prog.total, 100, 'progreso de misión también baja al pagar');
+});
+
+// ===========================================
+console.log('\n⚡ 10. ATAQUES DEL DESTINO (imprevistos)');
 // ===========================================
 
 test('imprevisto NO cuenta para el gasto del presupuesto', () => {
@@ -484,7 +548,7 @@ test('gasto normal SI cuenta para el presupuesto', () => {
 });
 
 // ===========================================
-console.log('\n🏦 10. COFRES (vaultBalance / liquidBalance / totalWealth)');
+console.log('\n🏦 11. COFRES (vaultBalance / liquidBalance / totalWealth)');
 // ===========================================
 
 test('cofre vacío → balance 0', () => {

@@ -156,7 +156,37 @@ const Engine = {
     return this.liquidBalance() + this.totalVaultsBalance();
   },
 
-  // Budget status per category — each budget compared against its own period
+  // Total allocated to missions (goalContributions)
+  totalMissionsAllocated() {
+    return this.data.goalContributions.reduce((s, c) => s + c.amount, 0);
+  },
+
+  // Free liquid = liquid bruto - missions allocated (the real "escudo")
+  availableLiquid() {
+    return this.liquidBalance() - this.totalMissionsAllocated();
+  },
+
+  // Total monthly budget from all Escudos
+  budgetMonthlyTotal() {
+    return this.data.budgets.reduce((s, b) => s + toMonthly(b.amount, b.frequency), 0);
+  },
+
+  // HP: budget for period vs real operational spending
+  // Excludes: isImprevisto and fromMission expenses (they don't drain vida)
+  periodHP(period) {
+    const monthly = this.budgetMonthlyTotal();
+    const objective = period === 'week' ? monthly * 12 / 52
+                    : period === 'year' ? monthly * 12
+                    : monthly;
+    const spent = this.transactionsInPeriod(period)
+      .filter(tx => tx.kind === 'expense' && !tx.isImprevisto && !tx.fromMission)
+      .reduce((s, tx) => s + tx.amount, 0);
+    const pct = objective > 0 ? Math.min(spent / objective * 100, 100) : 0;
+    const overPct = objective > 0 ? spent / objective * 100 : 0;
+    return { objective, spent, remaining: Math.max(objective - spent, 0), pct, overPct };
+  },
+
+
   budgetStatus() {
     return this.data.budgets.map(b => {
       const period = b.frequency === 'weekly' ? 'week' : b.frequency === 'yearly' ? 'year' : 'month';

@@ -471,6 +471,81 @@ body {
 .bar-fill.purple { background: linear-gradient(90deg, #500080, var(--purple)); }
 .bar-fill.gold { background: linear-gradient(90deg, var(--gold-dim), var(--gold)); }
 
+/* ---- Vida / HP bar ---- */
+.vida-card {
+  padding: 16px 20px;
+  border-radius: 12px;
+  background: rgba(160,0,0,0.08);
+  border: 1px solid rgba(220,60,60,0.25);
+  margin-bottom: 16px;
+}
+.vida-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+.vida-title {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #e06060;
+}
+.vida-numbers {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  color: var(--text);
+}
+.vida-numbers .vida-spent { color: #e06060; }
+.vida-numbers .vida-sep { color: var(--text-dim); font-size: 14px; margin: 0 4px; }
+.vida-numbers .vida-max { color: var(--text-dim); font-size: 14px; }
+.vida-bar-wrap {
+  height: 18px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 9px;
+  overflow: hidden;
+  position: relative;
+}
+.vida-bar-fill {
+  height: 100%;
+  border-radius: 9px;
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, #8b0000, #e03030);
+}
+.vida-bar-fill.ok   { background: linear-gradient(90deg, var(--green-dark), var(--green)); }
+.vida-bar-fill.warn { background: linear-gradient(90deg, #805000, var(--yellow)); }
+.vida-bar-fill.over { background: linear-gradient(90deg, #8b0000, #e03030); }
+.vida-sub {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* ---- Escudo / resource cards ---- */
+.resource-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.resource-card {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+}
+.resource-card .res-icon { font-size: 20px; margin-bottom: 4px; }
+.resource-card .res-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+.resource-card .res-value { font-family: 'Cinzel', serif; font-size: 15px; margin-top: 4px; }
+@media (max-width: 480px) {
+  .resource-cards { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .resource-card .res-value { font-size: 13px; }
+}
+
 .bar-label {
   display: flex;
   justify-content: space-between;

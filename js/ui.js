@@ -145,6 +145,9 @@ function renderDashboard() {
   const realSav = Engine.realSavingsInPeriod(currentPeriod);
   const imprevistos = Engine.transactionsInPeriod(currentPeriod).filter(tx => tx.isImprevisto && tx.kind === 'expense');
   const imprevistosTotal = imprevistos.reduce((s, tx) => s + tx.amount, 0);
+  const hp = Engine.periodHP(currentPeriod);
+  const available = Engine.availableLiquid();
+  const assigned = Engine.totalMissionsAllocated();
 
   const budgets = Engine.budgetStatus();
   const goals   = d.goals.filter(g => g.active).slice(0, 3);
@@ -158,25 +161,47 @@ function renderDashboard() {
     <h2 class="section-title">🗺️ Mapa del Reino</h2>
   </div>
 
-  <!-- PATRIMONIO -->
-  <div class="stat-cards">
-    <div class="stat-card balance">
-      <div class="stat-icon">💰</div>
-      <div class="stat-label">Balance líquido</div>
-      <div class="stat-value ${liquid >= 0 ? 'text-gold' : 'text-red'}">${fmt(liquid, Engine.currency)}</div>
-      <div class="card-sub">disponible</div>
+  <!-- BARRA DE VIDA -->
+  ${hp.objective > 0 ? (() => {
+    const hpState = hp.overPct >= 100 ? 'over' : hp.overPct >= 80 ? 'warn' : 'ok';
+    const periodLabel = { month: 'este mes', week: 'esta semana', year: 'este año' }[currentPeriod];
+    const hpIcon = hpState === 'ok' ? '❤️' : hpState === 'warn' ? '🟡' : '💀';
+    return `
+  <div class="vida-card">
+    <div class="vida-header">
+      <span class="vida-title">${hpIcon} Vida — presupuesto ${periodLabel}</span>
+      <span class="vida-numbers">
+        <span class="vida-spent">${fmtShort(hp.spent, Engine.currency)}</span>
+        <span class="vida-sep">/</span>
+        <span class="vida-max">${fmtShort(hp.objective, Engine.currency)}</span>
+      </span>
     </div>
-    <div class="stat-card savings">
-      <div class="stat-icon">🏦</div>
-      <div class="stat-label">En cofres</div>
-      <div class="stat-value text-blue">${fmt(inVaults, Engine.currency)}</div>
-      <div class="card-sub">invertido</div>
+    <div class="vida-bar-wrap">
+      <div class="vida-bar-fill ${hpState}" style="width:${hp.pct.toFixed(1)}%"></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-icon">👑</div>
-      <div class="stat-label">Patrimonio total</div>
-      <div class="stat-value text-gold" style="font-size:22px">${fmt(wealth, Engine.currency)}</div>
-      <div class="card-sub">líquido + cofres</div>
+    <div class="vida-sub">
+      <span>${hpState === 'ok' ? `Te quedan ${fmtShort(hp.remaining, Engine.currency)}` : hpState === 'warn' ? '⚠️ Cerca del límite' : '💀 Presupuesto superado'}</span>
+      <span>${hp.pct.toFixed(0)}% usado</span>
+    </div>
+  </div>`;
+  })() : ''}
+
+  <!-- RECURSOS -->
+  <div class="resource-cards">
+    <div class="resource-card">
+      <div class="res-icon">🛡️</div>
+      <div class="res-label">Escudo libre</div>
+      <div class="res-value ${available >= 0 ? 'text-green' : 'text-red'}">${fmt(available, Engine.currency)}</div>
+    </div>
+    <div class="resource-card">
+      <div class="res-icon">🎯</div>
+      <div class="res-label">En misiones</div>
+      <div class="res-value text-gold">${fmt(assigned, Engine.currency)}</div>
+    </div>
+    <div class="resource-card">
+      <div class="res-icon">🏦</div>
+      <div class="res-label">En cofres</div>
+      <div class="res-value text-blue">${fmt(inVaults, Engine.currency)}</div>
     </div>
   </div>
 
@@ -756,8 +781,9 @@ ${goals.length === 0 ? `
       <div style="position:absolute;bottom:0;left:0;height:3px;width:${prog.pct.toFixed(0)}%;background:${g.color || 'var(--gold)'};transition:width 0.5s"></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div class="goal-icon">${g.icon || '🎯'}</div>
-        <div style="display:flex;gap:6px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm btn-gold" onclick="openContribForm('${g.id}')">+ Aportar</button>
+          ${prog.total > 0 ? `<button class="btn btn-sm btn-primary" onclick="openUsarFondosForm('${g.id}')">💸 Usar</button>` : ''}
           <button class="btn btn-sm btn-danger btn-icon" onclick="deleteItem('goals','${g.id}')">🗑️</button>
         </div>
       </div>
@@ -1103,6 +1129,79 @@ function saveBudget(e) {
   const { newlyUnlocked } = Engine.checkAchievements();
   newlyUnlocked.forEach(a => toast(`🎖️ ¡Logro desbloqueado! "${a.name}"`, 'achievement', a.icon));
   toast('¡Escudo creado! 🛡️', 'success');
+  closeModal();
+  refresh();
+}
+
+function openUsarFondosForm(goalId) {
+  const goal = DB.get().goals.find(g => g.id === goalId);
+  const prog = Engine.goalProgress(goal);
+  const today = new Date().toISOString().split('T')[0];
+  openModal(`
+<div class="modal-title">💸 Usar fondos — ${goal.name}</div>
+<div style="margin-bottom:16px;padding:12px;border-radius:8px;background:rgba(64,128,240,0.1);border:1px solid rgba(64,128,240,0.3)">
+  <div class="text-dim" style="font-size:11px">Fondos disponibles en esta misión</div>
+  <div class="font-cinzel" style="font-size:20px;color:var(--gold)">${fmt(prog.total, Engine.currency)}</div>
+  <div class="text-dim" style="font-size:11px;margin-top:4px">Este pago <strong style="color:var(--green)">no reducirá tu vida</strong> — el dinero ya estaba apartado</div>
+</div>
+<form class="rpg-form" onsubmit="saveUsarFondos(event,'${goalId}')">
+  <div class="form-row">
+    <div class="form-group">
+      <label>Importe (€)</label>
+      <input name="amount" type="number" step="0.01" min="0.01" max="${prog.total.toFixed(2)}" required placeholder="0.00">
+    </div>
+    <div class="form-group">
+      <label>Fecha</label>
+      <input name="date" type="date" value="${today}">
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Categoría</label>
+    <select name="category">
+      ${Object.entries(CATEGORIES).map(([k,v]) => `<option value="${k}">${v.icon} ${v.label}</option>`).join('')}
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Nota (opcional)</label>
+    <input name="note" placeholder="Pago IBI, seguro coche...">
+  </div>
+  <button type="submit" class="btn btn-primary">💸 Confirmar pago</button>
+</form>`);
+}
+
+function saveUsarFondos(e, goalId) {
+  e.preventDefault();
+  const goal = DB.get().goals.find(g => g.id === goalId);
+  const fd = new FormData(e.target);
+  const amount = parseFloat(fd.get('amount'));
+  const prog = Engine.goalProgress(goal);
+
+  if (amount > prog.total) {
+    toast(`Solo tienes ${fmt(prog.total, Engine.currency)} en esta misión`, 'error', '💀');
+    return;
+  }
+
+  // Record as expense (reduces liquid) with fromMission flag (excluded from HP/vida)
+  DB.addItem('transactions', {
+    kind: 'expense',
+    amount,
+    category: fd.get('category'),
+    date: fd.get('date'),
+    note: fd.get('note') || `Pago: ${goal.name}`,
+    fromMission: goalId,
+    isImprevisto: false
+  });
+
+  // Reduce mission allocation with a negative contribution
+  DB.addItem('goalContributions', {
+    goalId,
+    amount: -amount,
+    date: fd.get('date'),
+    source: 'payment',
+    note: fd.get('note') || 'Pago realizado'
+  });
+
+  toast(`💸 Pagado ${fmt(amount, Engine.currency)} desde "${goal.name}" — vida intacta`, 'success');
   closeModal();
   refresh();
 }
