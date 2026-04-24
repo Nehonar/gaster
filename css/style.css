@@ -953,6 +953,7 @@ select option { background: var(--bg-dark); }
 .badge-planned { background: rgba(160,64,224,0.2); color: var(--purple); }
 .badge-active { background: rgba(64,192,112,0.2); color: var(--green); }
 .badge-inactive { background: rgba(100,100,100,0.2); color: #666; }
+.badge-imprevisto { background: rgba(220,80,60,0.15); color: #e06040; border: 1px solid rgba(220,80,60,0.3); }
 
 /* ===== FILTER BAR ===== */
 .filter-bar {

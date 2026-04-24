@@ -444,7 +444,47 @@ test('achievement saver_100 cuenta contribuciones de todas las metas', () => {
 });
 
 // ===========================================
-console.log('\n🏦 9. COFRES (vaultBalance / liquidBalance / totalWealth)');
+console.log('\n⚡ 9. ATAQUES DEL DESTINO (imprevistos)');
+// ===========================================
+
+test('imprevisto NO cuenta para el gasto del presupuesto', () => {
+  Engine.init(makeData({
+    budgets: [{ id:'b1', category:'transport', amount:100, frequency:'monthly' }],
+    transactions: [
+      { id:'t1', kind:'expense', amount:40,  category:'transport', date:date(5), isImprevisto:false },
+      { id:'t2', kind:'expense', amount:400, category:'transport', date:date(10), isImprevisto:true }
+    ]
+  }));
+  const [b] = Engine.budgetStatus();
+  assertEq(b.spent, 40, 'imprevisto excluido del gasto del presupuesto');
+  assert(b.status === 'ok', 'status ok aunque el imprevisto sea grande');
+});
+
+test('imprevisto NO penaliza XP en semanas pasadas', () => {
+  Engine.init(makeData({
+    budgets: [{ id:'b1', category:'transport', amount:100, frequency:'weekly' }],
+    transactions: [
+      { id:'t1', kind:'expense', amount:30,  category:'transport', date:LAST_WEEK_DATE, isImprevisto:false },
+      { id:'t2', kind:'expense', amount:500, category:'transport', date:LAST_WEEK_DATE, isImprevisto:true }
+    ]
+  }));
+  const lvl = Engine.playerLevel();
+  assertEq(lvl.breakdown.budget, 70, 'XP = 100-30=70, el imprevisto de 500 no cuenta');
+});
+
+test('gasto normal SI cuenta para el presupuesto', () => {
+  Engine.init(makeData({
+    budgets: [{ id:'b1', category:'food', amount:100, frequency:'monthly' }],
+    transactions: [
+      { id:'t1', kind:'expense', amount:80, category:'food', date:date(5), isImprevisto:false }
+    ]
+  }));
+  const [b] = Engine.budgetStatus();
+  assertEq(b.spent, 80, 'gasto normal sí cuenta');
+});
+
+// ===========================================
+console.log('\n🏦 10. COFRES (vaultBalance / liquidBalance / totalWealth)');
 // ===========================================
 
 test('cofre vacío → balance 0', () => {

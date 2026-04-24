@@ -163,7 +163,7 @@ const Engine = {
       const txs = this.transactionsInPeriod(period);
       const objective = b.amount;
       const spent = txs
-        .filter(tx => tx.kind === 'expense' && tx.category === b.category)
+        .filter(tx => tx.kind === 'expense' && tx.category === b.category && !tx.isImprevisto)
         .reduce((s, tx) => s + tx.amount, 0);
       const diff = objective - spent;
       const pct = objective > 0 ? Math.min((spent / objective) * 100, 100) : 0;
@@ -210,7 +210,7 @@ const Engine = {
           const spent = this.data.transactions
             .filter(tx => {
               const d = new Date(tx.date);
-              return tx.kind === 'expense' && tx.category === b.category && d >= wStart && d <= wEnd;
+              return tx.kind === 'expense' && tx.category === b.category && !tx.isImprevisto && d >= wStart && d <= wEnd;
             })
             .reduce((s, tx) => s + tx.amount, 0);
           xp += Math.max(0, b.amount - spent);
@@ -223,7 +223,7 @@ const Engine = {
 
         for (const month of pastMonths) {
           const spent = this.data.transactions
-            .filter(tx => tx.kind === 'expense' && tx.category === b.category && tx.date.startsWith(month))
+            .filter(tx => tx.kind === 'expense' && tx.category === b.category && !tx.isImprevisto && tx.date.startsWith(month))
             .reduce((s, tx) => s + tx.amount, 0);
           xp += Math.max(0, objective - spent);
         }

@@ -143,6 +143,8 @@ function renderDashboard() {
   const realInc = Engine.realIncomeInPeriod(currentPeriod);
   const realExp = Engine.realExpenseInPeriod(currentPeriod);
   const realSav = Engine.realSavingsInPeriod(currentPeriod);
+  const imprevistos = Engine.transactionsInPeriod(currentPeriod).filter(tx => tx.isImprevisto && tx.kind === 'expense');
+  const imprevistosTotal = imprevistos.reduce((s, tx) => s + tx.amount, 0);
 
   const budgets = Engine.budgetStatus();
   const goals   = d.goals.filter(g => g.active).slice(0, 3);
@@ -236,6 +238,31 @@ function renderDashboard() {
       </div>
     </div>
   </div>
+
+  <!-- ATAQUES DEL DESTINO -->
+  ${imprevistos.length ? `
+  <div class="card" style="border-color:rgba(220,80,60,0.3);background:rgba(220,80,60,0.05)">
+    <div class="card-title" style="color:#e06040">⚡ Ataques del Destino (${periodLabel})</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;align-items:center">
+      <div>
+        <div class="text-dim" style="font-size:11px">Imprevistos</div>
+        <div class="font-cinzel" style="font-size:20px;color:#e06040">${imprevistos.length}</div>
+      </div>
+      <div>
+        <div class="text-dim" style="font-size:11px">Daño recibido</div>
+        <div class="font-cinzel" style="font-size:20px;color:#e06040">-${fmt(imprevistosTotal, Engine.currency)}</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-dim);flex:1;min-width:160px">
+        ${liquid >= 0
+          ? `✅ Tu balance lo ha aguantado`
+          : `💀 Tu balance ha caído en negativo — considera retirar de un cofre`}
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-dim)">
+      Estos gastos <strong style="color:#e06040">no penalizan</strong> tus presupuestos ni tu XP.
+    </div>
+  </div>
+  ` : ''}
 
   <!-- XP BREAKDOWN -->
   <div class="card">
@@ -440,7 +467,7 @@ ${txs.length === 0 ? `
     <div class="tx-item">
       <div class="tx-icon">${cat.icon}</div>
       <div class="tx-info">
-        <div class="tx-name">${tx.note || cat.label}${tx.isExtra ? ' <span class="badge badge-extra">Extra</span>' : ''}</div>
+        <div class="tx-name">${tx.note || cat.label}${tx.isImprevisto ? ' <span class="badge badge-imprevisto">⚡ Destino</span>' : tx.isExtra ? ' <span class="badge badge-extra">Extra</span>' : ''}</div>
         <div class="tx-meta">${cat.label} · ${tx.date}</div>
       </div>
       <div class="tx-amount ${tx.kind}">${tx.kind === 'income' ? '+' : '-'}${fmt(tx.amount, Engine.currency)}</div>
@@ -1006,6 +1033,12 @@ function openTxForm(defaultKind) {
       Movimiento extra (no habitual)
     </label>
   </div>
+  <div class="form-group">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+      <input type="checkbox" name="isImprevisto" style="width:auto">
+      <span>⚡ Ataque del Destino <span style="font-size:11px;color:var(--text-dim)">(imprevisto — no penaliza presupuesto ni XP)</span></span>
+    </label>
+  </div>
   <button type="submit" class="btn btn-primary">⚔️ Registrar</button>
 </form>`);
 }
@@ -1019,7 +1052,8 @@ function saveTx(e) {
     category: fd.get('category'),
     date: fd.get('date'),
     note: fd.get('note') || '',
-    isExtra: fd.get('isExtra') === 'on'
+    isExtra: fd.get('isExtra') === 'on',
+    isImprevisto: fd.get('isImprevisto') === 'on'
   };
   DB.addItem('transactions', item);
   const { newlyUnlocked } = Engine.checkAchievements();
