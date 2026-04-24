@@ -477,6 +477,13 @@ body {
   border-radius: 12px;
   background: rgba(160,0,0,0.08);
   border: 1px solid rgba(220,60,60,0.25);
+  margin-bottom: 6px;
+}
+.escudo-card {
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgba(40,80,180,0.08);
+  border: 1px solid rgba(64,128,240,0.25);
   margin-bottom: 16px;
 }
 .vida-header {
@@ -516,6 +523,22 @@ body {
 .vida-bar-fill.ok   { background: linear-gradient(90deg, var(--green-dark), var(--green)); }
 .vida-bar-fill.warn { background: linear-gradient(90deg, #805000, var(--yellow)); }
 .vida-bar-fill.over { background: linear-gradient(90deg, #8b0000, #e03030); }
+
+.escudo-bar-wrap {
+  height: 12px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+.escudo-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, #003080, var(--blue));
+}
+.escudo-bar-fill.danger { background: linear-gradient(90deg, #8b0000, #e03030); }
+
 .vida-sub {
   display: flex;
   justify-content: space-between;

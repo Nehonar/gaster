@@ -188,13 +188,33 @@ function renderDashboard() {
   </div>`;
   })() : ''}
 
-  <!-- RECURSOS -->
-  <div class="resource-cards">
-    <div class="resource-card">
-      <div class="res-icon">🛡️</div>
-      <div class="res-label">Escudo libre</div>
-      <div class="res-value ${available >= 0 ? 'text-green' : 'text-red'}">${fmt(available, Engine.currency)}</div>
+  <!-- BARRA DE ESCUDO -->
+  ${(() => {
+    const liquid = Engine.liquidBalance();
+    const escudoPct = liquid > 0 ? Math.min((available / liquid) * 100, 100) : 0;
+    const escudoState = available < 0 ? 'danger' : '';
+    return `
+  <div class="escudo-card">
+    <div class="vida-header">
+      <span class="vida-title" style="color:var(--blue)">🛡️ Escudo libre</span>
+      <span class="vida-numbers">
+        <span style="color:var(--blue)">${fmt(available, Engine.currency)}</span>
+        <span class="vida-sep">/</span>
+        <span class="vida-max">${fmt(liquid, Engine.currency)}</span>
+      </span>
     </div>
+    <div class="escudo-bar-wrap">
+      <div class="escudo-bar-fill ${escudoState}" style="width:${Math.max(0,escudoPct).toFixed(1)}%"></div>
+    </div>
+    <div class="vida-sub">
+      <span>${assigned > 0 ? `🎯 ${fmt(assigned, Engine.currency)} en misiones` : 'Sin misiones asignadas'}</span>
+      <span>${escudoPct.toFixed(0)}% libre</span>
+    </div>
+  </div>`;
+  })()}
+
+  <!-- COFRES CARD -->
+  <div class="resource-cards" style="grid-template-columns:repeat(2,1fr)">
     <div class="resource-card">
       <div class="res-icon">🎯</div>
       <div class="res-label">En misiones</div>
