@@ -239,26 +239,33 @@ function renderDashboard() {
       </div>
       <div class="stat-card expense">
         <div class="stat-icon">🗡️</div>
-        <div class="stat-label">Gastos</div>
+        <div class="stat-label">Gastos fijos</div>
         <div class="stat-value">${fmt(exp, Engine.currency)}</div>
         <div class="card-sub">/ mes</div>
       </div>
-      <div class="stat-card savings">
-        <div class="stat-icon">🏆</div>
-        <div class="stat-label">Ahorro</div>
-        <div class="stat-value ${sav >= 0 ? 'text-green' : 'text-red'}">${fmt(sav, Engine.currency)}</div>
+      ${Engine.budgetMonthlyTotal() > 0 ? `
+      <div class="stat-card" style="border-color:rgba(220,60,60,0.3)">
+        <div class="stat-icon">🛡️</div>
+        <div class="stat-label">Escudos</div>
+        <div class="stat-value text-red">-${fmt(Engine.budgetMonthlyTotal(), Engine.currency)}</div>
+        <div class="card-sub">/ mes</div>
+      </div>` : ''}
+      <div class="stat-card ${(sav - Engine.budgetMonthlyTotal()) >= 0 ? 'savings' : 'expense'}">
+        <div class="stat-icon">✨</div>
+        <div class="stat-label">Libre real</div>
+        <div class="stat-value ${(sav - Engine.budgetMonthlyTotal()) >= 0 ? 'text-green' : 'text-red'}">${fmt(sav - Engine.budgetMonthlyTotal(), Engine.currency)}</div>
         <div class="card-sub">/ mes</div>
       </div>
       <div class="stat-card weekly">
         <div class="stat-icon">📅</div>
-        <div class="stat-label">Margen semanal</div>
-        <div class="stat-value">${fmt(weekly, Engine.currency)}</div>
+        <div class="stat-label">Libre semanal</div>
+        <div class="stat-value ${(weekly - Engine.budgetMonthlyTotal()*12/52) >= 0 ? '' : 'text-red'}">${fmt(weekly - Engine.budgetMonthlyTotal()*12/52, Engine.currency)}</div>
         <div class="card-sub">/ semana</div>
       </div>
       <div class="stat-card daily">
         <div class="stat-icon">☀️</div>
-        <div class="stat-label">Margen diario</div>
-        <div class="stat-value">${fmt(daily, Engine.currency)}</div>
+        <div class="stat-label">Libre diario</div>
+        <div class="stat-value">${fmt(daily - Engine.budgetMonthlyTotal()*12/365, Engine.currency)}</div>
         <div class="card-sub">/ día</div>
       </div>
     </div>
