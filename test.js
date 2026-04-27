@@ -482,6 +482,19 @@ test('periodHP excluye imprevistos — vida = remaining, no spent', () => {
   assertEq(hp.objective, 200, 'objetivo = 200');
 });
 
+test('periodHP excluye gastos sin Escudo (contratos como luz, hipoteca)', () => {
+  Engine.init(makeData({
+    budgets:[{id:'b1',category:'food',amount:200,frequency:'monthly'}],
+    transactions:[
+      {id:'t1',kind:'expense',amount:80, category:'food',    date:date(5)},
+      {id:'t2',kind:'expense',amount:150,category:'utilities',date:date(8)}
+    ]
+  }));
+  const hp = Engine.periodHP('month');
+  assertEq(hp.spent, 80, 'gasto utilities (sin escudo) no drena vida');
+  assertEq(hp.remaining, 120, 'vida restante = 200 - 80 = 120');
+});
+
 test('periodHP excluye pagos de misiones del gasto', () => {
   Engine.init(makeData({
     budgets:[{id:'b1',category:'food',amount:200,frequency:'monthly'}],

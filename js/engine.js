@@ -171,16 +171,18 @@ const Engine = {
     return this.data.budgets.reduce((s, b) => s + toMonthly(b.amount, b.frequency), 0);
   },
 
-  // HP: budget for period vs real operational spending
-  // Excludes: isImprevisto and fromMission expenses (they don't drain vida)
-  // Income in period refills vida (sells, refunds, extra earnings)
+  // HP: budget for period vs spending in Escudo categories only
+  // Gastos de Contratos (luz, hipoteca...) no drenan vida — solo los discretionales con Escudo
+  // Excludes: isImprevisto and fromMission
+  // Income in period refills vida
   periodHP(period) {
     const monthly = this.budgetMonthlyTotal();
     const objective = period === 'week' ? monthly * 12 / 52
                     : period === 'year' ? monthly * 12
                     : monthly;
+    const budgetCategories = new Set(this.data.budgets.map(b => b.category));
     const txs = this.transactionsInPeriod(period);
-    const spent  = txs.filter(tx => tx.kind === 'expense' && !tx.isImprevisto && !tx.fromMission).reduce((s, tx) => s + tx.amount, 0);
+    const spent  = txs.filter(tx => tx.kind === 'expense' && !tx.isImprevisto && !tx.fromMission && budgetCategories.has(tx.category)).reduce((s, tx) => s + tx.amount, 0);
     const income = txs.filter(tx => tx.kind === 'income').reduce((s, tx) => s + tx.amount, 0);
     const net       = Math.max(0, spent - income);
     const remaining = Math.max(0, objective - net);
