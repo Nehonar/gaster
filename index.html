@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GasterQuest ⚔️ Finanzas RPG</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- DEV MODE BANNER -->
+  <div id="dev-banner">
+    ⚔️ MODO DESARROLLO — GasterQuest v0.1 — Datos guardados en localStorage
+  </div>
+
+  <!-- SIDEBAR NAV -->
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="game-logo">⚔️</div>
+      <h1 class="game-title">GasterQuest</h1>
+      <p class="game-subtitle">Finanzas RPG</p>
+    </div>
+
+    <div class="player-card">
+      <div class="player-avatar" id="player-avatar">🧙</div>
+      <div class="player-info">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="player-name" id="player-name">Aventurero</div>
+          <button id="btn-edit-player" class="btn-edit-player">✏️</button>
+        </div>
+        <div class="player-level">
+          <span class="level-badge" id="player-level">Nv. 1</span>
+          <span class="player-class" id="player-class">Aprendiz</span>
+        </div>
+        <div class="xp-bar-container">
+          <div class="xp-bar" id="xp-bar" style="width:0%"></div>
+        </div>
+        <div class="xp-label" id="xp-label">0 / 100 XP</div>
+      </div>
+    </div>
+
+    <ul class="nav-list">
+      <li class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Mapa del Reino</span>
+      </li>
+      <li class="nav-item" data-view="contratos">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Contratos del Reino</span>
+      </li>
+      <li class="nav-item" data-view="transactions">
+        <span class="nav-icon">⚔️</span>
+        <span class="nav-label">Diario de Campaña</span>
+      </li>
+      <li class="nav-item" data-view="budgets">
+        <span class="nav-icon">🛡️</span>
+        <span class="nav-label">Escudos</span>
+      </li>
+      <li class="nav-item" data-view="vaults">
+        <span class="nav-icon">🏦</span>
+        <span class="nav-label">Cofres</span>
+      </li>
+      <li class="nav-item" data-view="goals">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">Misiones</span>
+      </li>
+      <li class="nav-item" data-view="achievements">
+        <span class="nav-icon">🎖️</span>
+        <span class="nav-label">Pergamino de Honor</span>
+      </li>
+      <li class="nav-item" data-view="backup">
+        <span class="nav-icon">💾</span>
+        <span class="nav-label">Pergamino Mágico</span>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <button class="btn-quick" id="btn-quick-expense">⚔️ Anotar gasto</button>
+      <button class="btn-quick btn-quick-income" id="btn-quick-income">💰 Anotar ingreso</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main">
+    <header id="top-bar">
+      <button id="menu-toggle">☰</button>
+      <div class="period-selector">
+        <button class="period-btn active" data-period="month">Este Mes</button>
+        <button class="period-btn" data-period="week">Esta Semana</button>
+        <button class="period-btn" data-period="year">Este Año</button>
+      </div>
+      <div class="top-stats">
+        <div class="top-stat gold">
+          <span>⚔️</span>
+          <span id="top-balance">0 €</span>
+        </div>
+      </div>
+    </header>
+
+    <div id="view-container">
+      <!-- Views rendered by JS -->
+    </div>
+  </main>
+
+  <!-- MODAL OVERLAY -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-box">
+      <button id="modal-close">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR BACKDROP (mobile) -->
+  <div id="sidebar-backdrop"></div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast-container"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
